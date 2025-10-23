@@ -103,37 +103,86 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .sidebar h3 {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             color: #2d3748;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 700;
         }
 
         .element-library {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 20px;
+        }
+
+        .element-category {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 8px;
+            margin-bottom: 4px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .category-icon {
+            font-size: 18px;
+        }
+
+        .category-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #2d3748;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .library-element {
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 8px;
             cursor: move;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: 2px solid transparent;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .library-element::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .library-element:hover::before {
+            opacity: 1;
         }
 
         .library-element:hover {
-            transform: translateY(-2px);
+            transform: translateX(4px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
         }
 
         .library-element:active {
-            transform: scale(0.98);
+            transform: scale(0.98) translateX(0);
         }
 
         .element-icon {
@@ -155,6 +204,163 @@ HTML_CONTENT = """<!DOCTYPE html>
             width: 100%;
             height: 100%;
             position: relative;
+            transform-origin: 0 0;
+            transition: transform 0.2s ease-out;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #4a5568;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .zoom-btn:hover {
+            background: #4299e1;
+            color: white;
+            border-color: #4299e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .zoom-btn:active {
+            transform: translateY(0);
+        }
+
+        .zoom-level {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+            min-width: 70px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .connection-drag-line {
+            stroke: #f56565;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 8, 4;
+            animation: dash 0.5s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -12;
+            }
+        }
+
+        .element-menu-popup {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            z-index: 10000;
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 220px;
+            animation: popupAppear 0.2s ease-out;
+        }
+
+        @keyframes popupAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .element-menu-popup h4 {
+            font-size: 14px;
+            color: #2d3748;
+            margin-bottom: 12px;
+            padding: 0 8px;
+            font-weight: 700;
+        }
+
+        .popup-category {
+            margin-bottom: 16px;
+        }
+
+        .popup-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .popup-category-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            background: #f7fafc;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .popup-category-icon {
+            font-size: 14px;
+        }
+
+        .popup-category-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .popup-element-item {
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s;
+            margin-bottom: 3px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .popup-element-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .funnel-element.drag-hover {
+            box-shadow: 0 0 0 4px rgba(245, 101, 101, 0.5);
+            transform: scale(1.02);
         }
 
         .funnel-element {
@@ -250,21 +456,27 @@ HTML_CONTENT = """<!DOCTYPE html>
             transition: all 0.2s;
         }
 
-        .connection-point.top {
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
+        .connection-point.left {
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
-        .connection-point.bottom {
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
+        .connection-point.right {
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
-        .connection-point:hover {
+        .connection-point.left:hover {
             background: #4299e1;
-            transform: translateX(-50%) scale(1.4);
+            transform: translateY(-50%) scale(1.4);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+
+        .connection-point.right:hover {
+            background: #4299e1;
+            transform: translateY(-50%) scale(1.4);
             box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
         }
 
@@ -275,8 +487,8 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         @keyframes pulse {
-            0%, 100% { transform: translateX(-50%) scale(1); }
-            50% { transform: translateX(-50%) scale(1.3); }
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.3); }
         }
 
         svg.connections {
@@ -473,6 +685,43 @@ HTML_CONTENT = """<!DOCTYPE html>
             margin: 0;
         }
 
+        .traffic-mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #f7fafc;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .mode-option {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .mode-option:hover {
+            transform: translateY(-1px);
+        }
+
+        .mode-option.active {
+            background: white;
+            border-color: #4299e1;
+            color: #4299e1;
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
+        }
+
+        .mode-option.inactive {
+            background: transparent;
+            color: #718096;
+        }
+
         .empty-state {
             color: #a0aec0;
             text-align: center;
@@ -481,7 +730,14 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .color-trafego { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .color-retargeting { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
         .color-landing { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .color-captura { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
+        .color-vsl { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .color-vendas { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .color-checkout { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .color-obrigado { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
+        .color-squeeze { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
         .color-email { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         .color-sequencia { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
         .color-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); }
@@ -490,12 +746,9 @@ HTML_CONTENT = """<!DOCTYPE html>
         .color-webinar { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
         .color-countdown { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
         .color-call { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
-        .color-checkout { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
         .color-upsell { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
         .color-downsell { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
         .color-membros { background: linear-gradient(135deg, #8e44ad 0%, #c0392b 100%); }
-        .color-retargeting { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
-        .color-obrigado { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
 
         /* Login Screen Styles */
         .login-container {
@@ -618,24 +871,66 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
 
-        const ELEMENT_TYPES = [
-            { type: 'trafego', name: 'Tráfego', icon: '🎯', color: 'color-trafego' },
-            { type: 'landing', name: 'Landing Page', icon: '📄', color: 'color-landing' },
-            { type: 'email', name: 'Email', icon: '✉️', color: 'color-email' },
-            { type: 'sequencia', name: 'Sequência Email', icon: '📧', color: 'color-sequencia' },
-            { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' },
-            { type: 'quiz', name: 'Quiz/Enquete', icon: '📊', color: 'color-quiz' },
-            { type: 'video', name: 'Vídeo/VSL', icon: '🎬', color: 'color-video' },
-            { type: 'webinar', name: 'Webinar', icon: '🎥', color: 'color-webinar' },
-            { type: 'countdown', name: 'Countdown', icon: '⏰', color: 'color-countdown' },
-            { type: 'call', name: 'Call/Consulta', icon: '📞', color: 'color-call' },
-            { type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout' },
-            { type: 'upsell', name: 'Upsell', icon: '⬆️', color: 'color-upsell' },
-            { type: 'downsell', name: 'Downsell', icon: '🎁', color: 'color-downsell' },
-            { type: 'membros', name: 'Área Membros', icon: '📚', color: 'color-membros' },
-            { type: 'retargeting', name: 'Retargeting', icon: '🔄', color: 'color-retargeting' },
-            { type: 'obrigado', name: 'Obrigado', icon: '🎉', color: 'color-obrigado' }
+        const ELEMENT_CATEGORIES = [
+            {
+                name: 'Tráfego',
+                icon: '🎯',
+                elements: [
+                    { type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego' },
+                    { type: 'retargeting', name: 'Retargeting', icon: '🔄', color: 'color-retargeting' }
+                ]
+            },
+            {
+                name: 'Páginas',
+                icon: '📄',
+                elements: [
+                    { type: 'landing', name: 'Landing Page', icon: '🚀', color: 'color-landing' },
+                    { type: 'captura', name: 'Página de Captura', icon: '📝', color: 'color-captura' },
+                    { type: 'vsl', name: 'VSL (Video Sales Letter)', icon: '🎬', color: 'color-vsl' },
+                    { type: 'vendas', name: 'Página de Vendas', icon: '💎', color: 'color-vendas' },
+                    { type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout' },
+                    { type: 'obrigado', name: 'Página Obrigado', icon: '🎉', color: 'color-obrigado' },
+                    { type: 'squeeze', name: 'Squeeze Page', icon: '🎁', color: 'color-squeeze' }
+                ]
+            },
+            {
+                name: 'Relacionamento',
+                icon: '💬',
+                elements: [
+                    { type: 'email', name: 'Email', icon: '✉️', color: 'color-email' },
+                    { type: 'sequencia', name: 'Sequência Email', icon: '📧', color: 'color-sequencia' },
+                    { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' }
+                ]
+            },
+            {
+                name: 'Engajamento',
+                icon: '🎬',
+                elements: [
+                    { type: 'quiz', name: 'Quiz/Enquete', icon: '📊', color: 'color-quiz' },
+                    { type: 'video', name: 'Vídeo', icon: '▶️', color: 'color-video' },
+                    { type: 'webinar', name: 'Webinar', icon: '🎥', color: 'color-webinar' },
+                    { type: 'call', name: 'Call/Consulta', icon: '📞', color: 'color-call' }
+                ]
+            },
+            {
+                name: 'Conversão',
+                icon: '💰',
+                elements: [
+                    { type: 'countdown', name: 'Countdown', icon: '⏰', color: 'color-countdown' },
+                    { type: 'upsell', name: 'Upsell', icon: '⬆️', color: 'color-upsell' },
+                    { type: 'downsell', name: 'Downsell', icon: '⬇️', color: 'color-downsell' }
+                ]
+            },
+            {
+                name: 'Pós-Venda',
+                icon: '🎁',
+                elements: [
+                    { type: 'membros', name: 'Área de Membros', icon: '📚', color: 'color-membros' }
+                ]
+            }
         ];
+
+        const ELEMENT_TYPES = ELEMENT_CATEGORIES.flatMap(cat => cat.elements);
 
         function LoginScreen({ onLogin }) {
             const [email, setEmail] = useState('');
@@ -701,6 +996,13 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
             const [isDragging, setIsDragging] = useState(false);
             const [mouseDownPos, setMouseDownPos] = useState({ x: 0, y: 0 });
+            const [zoomLevel, setZoomLevel] = useState(1);
+            const [isDraggingConnection, setIsDraggingConnection] = useState(false);
+            const [dragConnectionStart, setDragConnectionStart] = useState(null);
+            const [dragConnectionEnd, setDragConnectionEnd] = useState(null);
+            const [hoveredElement, setHoveredElement] = useState(null);
+            const [showElementMenu, setShowElementMenu] = useState(false);
+            const [elementMenuPosition, setElementMenuPosition] = useState({ x: 0, y: 0 });
             const canvasRef = useRef(null);
 
             const calculateMetrics = () => {
@@ -853,12 +1155,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                     color: elementType.color,
                     x: Math.max(0, x),
                     y: Math.max(0, y),
-                    investment: 10000,
-                    impressions: 100000,
-                    clicks: 2000,
+                    investment: 0,
+                    impressions: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    cpm: 0,
+                    trafficMode: 'absolute', // 'absolute' ou 'metrics'
                     pageViewRate: 100,
-                    conversionRate: 50,
-                    price: 100,
+                    conversionRate: 0,
+                    price: 0,
                     url: '',
                     description: '',
                     generatesRevenue: false
@@ -892,6 +1197,13 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const handleMouseMove = (e) => {
+                // Arrasto de conexão
+                if (isDraggingConnection) {
+                    handleConnectionDragMove(e);
+                    return;
+                }
+
+                // Arrasto de elemento
                 if (!draggingElement) return;
 
                 // Só começa a arrastar se mover mais de 5 pixels
@@ -904,8 +1216,8 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 if (isDragging) {
                     const rect = canvasRef.current.getBoundingClientRect();
-                    const x = e.clientX - rect.left - dragOffset.x;
-                    const y = e.clientY - rect.top - dragOffset.y;
+                    const x = (e.clientX - rect.left) / zoomLevel - dragOffset.x;
+                    const y = (e.clientY - rect.top) / zoomLevel - dragOffset.y;
 
                     setElements(elements.map(el =>
                         el.id === draggingElement
@@ -921,6 +1233,12 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const handleCanvasClick = (e) => {
+                // Fecha o menu popup se estiver aberto
+                if (showElementMenu) {
+                    setShowElementMenu(false);
+                    return;
+                }
+
                 // Só desseleciona se clicar diretamente no canvas ou canvas-container
                 if (e.target === e.currentTarget ||
                     e.target.classList.contains('canvas') ||
@@ -939,46 +1257,123 @@ HTML_CONTENT = """<!DOCTYPE html>
             const handleConnectionStart = (e, elementId) => {
                 e.stopPropagation();
                 e.preventDefault();
-                if (connectingFrom === elementId) {
-                    // Se clicar no mesmo elemento, cancela a conexão
-                    setConnectingFrom(null);
-                } else if (connectingFrom) {
-                    // Se já está conectando, finaliza a conexão
+
+                const element = elements.find(el => el.id === elementId);
+                if (!element) return;
+
+                const rect = canvasRef.current.getBoundingClientRect();
+
+                // Inicia o arrasto da conexão
+                setIsDraggingConnection(true);
+                setConnectingFrom(elementId);
+                setDragConnectionStart({
+                    x: element.x + 220, // direita do elemento
+                    y: element.y + 60   // meio do elemento
+                });
+                setDragConnectionEnd({
+                    x: (e.clientX - rect.left) / zoomLevel,
+                    y: (e.clientY - rect.top) / zoomLevel
+                });
+            };
+
+            const handleConnectionDragMove = (e) => {
+                if (!isDraggingConnection) return;
+
+                const rect = canvasRef.current.getBoundingClientRect();
+                setDragConnectionEnd({
+                    x: (e.clientX - rect.left) / zoomLevel,
+                    y: (e.clientY - rect.top) / zoomLevel
+                });
+            };
+
+            const handleConnectionDragEnd = (e) => {
+                if (!isDraggingConnection) return;
+
+                e.stopPropagation();
+
+                // Se soltou sobre um elemento com hover, cria a conexão
+                if (hoveredElement && hoveredElement !== connectingFrom) {
                     const connectionExists = connections.some(
-                        conn => conn.from === connectingFrom && conn.to === elementId
+                        conn => conn.from === connectingFrom && conn.to === hoveredElement
                     );
+
                     if (!connectionExists) {
                         setConnections([...connections, {
                             id: Date.now(),
                             from: connectingFrom,
-                            to: elementId,
+                            to: hoveredElement,
                             conversion: 10
                         }]);
                     }
+
+                    // Reset states
+                    setIsDraggingConnection(false);
+                    setDragConnectionStart(null);
+                    setDragConnectionEnd(null);
                     setConnectingFrom(null);
+                    setHoveredElement(null);
                 } else {
-                    // Inicia nova conexão
-                    setConnectingFrom(elementId);
+                    // Se não soltou sobre um elemento, mostra o menu
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    const menuX = (e.clientX - rect.left) / zoomLevel;
+                    const menuY = (e.clientY - rect.top) / zoomLevel;
+
+                    setElementMenuPosition({
+                        x: menuX * zoomLevel,
+                        y: menuY * zoomLevel
+                    });
+                    setShowElementMenu(true);
+
+                    // Não reseta connectingFrom aqui, será resetado quando selecionar um elemento
+                    setIsDraggingConnection(false);
+                    setDragConnectionStart(null);
+                    setDragConnectionEnd(null);
+                    setHoveredElement(null);
                 }
             };
 
-            const handleConnectionEnd = (e, elementId) => {
-                e.stopPropagation();
-                e.preventDefault();
-                if (connectingFrom && connectingFrom !== elementId) {
-                    const connectionExists = connections.some(
-                        conn => conn.from === connectingFrom && conn.to === elementId
-                    );
-
-                    if (!connectionExists) {
-                        setConnections([...connections, {
-                            id: Date.now(),
-                            from: connectingFrom,
-                            to: elementId,
-                            conversion: 10
-                        }]);
-                    }
+            const handleElementHover = (elementId, isHovering) => {
+                if (isDraggingConnection) {
+                    setHoveredElement(isHovering ? elementId : null);
                 }
+            };
+
+            const handleElementMenuSelect = (elementType) => {
+                const newElement = {
+                    id: Date.now(),
+                    type: elementType.type,
+                    name: elementType.name,
+                    icon: elementType.icon,
+                    color: elementType.color,
+                    x: Math.max(0, elementMenuPosition.x / zoomLevel - 110),
+                    y: Math.max(0, elementMenuPosition.y / zoomLevel - 60),
+                    investment: 0,
+                    impressions: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    cpm: 0,
+                    trafficMode: 'absolute', // 'absolute' ou 'metrics'
+                    pageViewRate: 100,
+                    conversionRate: 0,
+                    price: 0,
+                    url: '',
+                    description: '',
+                    generatesRevenue: false
+                };
+
+                setElements([...elements, newElement]);
+
+                // Cria a conexão com o novo elemento
+                if (connectingFrom) {
+                    setConnections([...connections, {
+                        id: Date.now() + 1,
+                        from: connectingFrom,
+                        to: newElement.id,
+                        conversion: 0
+                    }]);
+                }
+
+                setShowElementMenu(false);
                 setConnectingFrom(null);
             };
 
@@ -1029,9 +1424,63 @@ HTML_CONTENT = """<!DOCTYPE html>
             const updateElementProperty = (property, value) => {
                 setElements(elements.map(el => {
                     if (el.id === selectedElement) {
-                        // Se for um campo numérico, converte para número
-                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price'].includes(property)) {
-                            return { ...el, [property]: parseFloat(value) || 0 };
+                        // Se for um campo numérico
+                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm'].includes(property)) {
+                            // Se o valor estiver vazio, permite vazio (não força 0)
+                            if (value === '' || value === null || value === undefined) {
+                                return { ...el, [property]: 0 };
+                            }
+                            const numValue = parseFloat(value);
+                            const updated = { ...el, [property]: numValue };
+
+                            // Cálculos automáticos para modo de tráfego
+                            if (el.type === 'trafego') {
+                                if (el.trafficMode === 'metrics') {
+                                    // Sempre recalcula impressões se temos CPM e investimento
+                                    if (updated.cpm > 0 && updated.investment > 0) {
+                                        updated.impressions = Math.round((updated.investment / updated.cpm) * 1000);
+                                    }
+                                    // Sempre recalcula cliques se temos CTR e impressões
+                                    if (updated.ctr > 0 && updated.impressions > 0) {
+                                        updated.clicks = Math.round((updated.impressions * updated.ctr) / 100);
+                                    }
+                                } else if (el.trafficMode === 'absolute') {
+                                    // Calcula CTR automaticamente
+                                    if (updated.impressions > 0 && updated.clicks >= 0) {
+                                        updated.ctr = parseFloat(((updated.clicks / updated.impressions) * 100).toFixed(2));
+                                    }
+                                    // Calcula CPM automaticamente
+                                    if (updated.impressions > 0 && updated.investment >= 0) {
+                                        updated.cpm = parseFloat(((updated.investment / updated.impressions) * 1000).toFixed(2));
+                                    }
+                                }
+                            }
+
+                            return updated;
+                        }
+                        // Se mudou o modo de tráfego, recalcula tudo
+                        if (property === 'trafficMode') {
+                            const updated = { ...el, [property]: value };
+
+                            if (value === 'metrics') {
+                                // Recalcula com base nas métricas
+                                if (updated.cpm > 0 && updated.investment > 0) {
+                                    updated.impressions = Math.round((updated.investment / updated.cpm) * 1000);
+                                }
+                                if (updated.ctr > 0 && updated.impressions > 0) {
+                                    updated.clicks = Math.round((updated.impressions * updated.ctr) / 100);
+                                }
+                            } else if (value === 'absolute') {
+                                // Recalcula as métricas
+                                if (updated.impressions > 0 && updated.clicks >= 0) {
+                                    updated.ctr = parseFloat(((updated.clicks / updated.impressions) * 100).toFixed(2));
+                                }
+                                if (updated.impressions > 0 && updated.investment >= 0) {
+                                    updated.cpm = parseFloat(((updated.investment / updated.impressions) * 1000).toFixed(2));
+                                }
+                            }
+
+                            return updated;
                         }
                         // Se for booleano, mantém como está
                         if (property === 'generatesRevenue') {
@@ -1048,7 +1497,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                 setConnections(connections.map(conn => {
                     if (conn.id === selectedConnection) {
                         if (property === 'conversion') {
-                            return { ...conn, [property]: parseFloat(value) || 0 };
+                            // Se o valor estiver vazio, permite vazio (converte para 0)
+                            if (value === '' || value === null || value === undefined) {
+                                return { ...conn, [property]: 0 };
+                            }
+                            return { ...conn, [property]: parseFloat(value) };
                         }
                         return { ...conn, [property]: value };
                     }
@@ -1062,14 +1515,31 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 if (!fromEl || !toEl) return '';
 
-                const fromX = fromEl.x + 100;
-                const fromY = fromEl.y + 100;
-                const toX = toEl.x + 100;
-                const toY = toEl.y;
+                // Elemento origem - saída pela direita
+                const fromX = fromEl.x + 220; // largura do elemento
+                const fromY = fromEl.y + 60; // meio do elemento
 
-                const midY = (fromY + toY) / 2;
+                // Elemento destino - entrada pela esquerda
+                const toX = toEl.x;
+                const toY = toEl.y + 60; // meio do elemento
 
-                return `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`;
+                // Distância horizontal entre os elementos
+                const midX = (fromX + toX) / 2;
+
+                // Cria uma curva suave horizontal
+                return `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
+            };
+
+            const handleZoomIn = () => {
+                setZoomLevel(prev => Math.min(prev + 0.1, 2));
+            };
+
+            const handleZoomOut = () => {
+                setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
+            };
+
+            const handleZoomReset = () => {
+                setZoomLevel(1);
             };
 
             const dashboardMetrics = getDashboardMetrics();
@@ -1116,17 +1586,25 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                     <div className="main-content">
                         <div className="sidebar">
-                            <h3>Elementos do Funil</h3>
+                            <h3>📦 Elementos do Funil</h3>
                             <div className="element-library">
-                                {ELEMENT_TYPES.map(type => (
-                                    <div
-                                        key={type.type}
-                                        className={`library-element ${type.color}`}
-                                        draggable
-                                        onDragEnd={(e) => handleDragFromLibrary(e, type)}
-                                    >
-                                        <span className="element-icon">{type.icon}</span>
-                                        <span>{type.name}</span>
+                                {ELEMENT_CATEGORIES.map((category, idx) => (
+                                    <div key={idx} className="element-category">
+                                        <div className="category-header">
+                                            <span className="category-icon">{category.icon}</span>
+                                            <span className="category-name">{category.name}</span>
+                                        </div>
+                                        {category.elements.map(type => (
+                                            <div
+                                                key={type.type}
+                                                className={`library-element ${type.color}`}
+                                                draggable
+                                                onDragEnd={(e) => handleDragFromLibrary(e, type)}
+                                            >
+                                                <span className="element-icon">{type.icon}</span>
+                                                <span>{type.name}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
                             </div>
@@ -1136,9 +1614,21 @@ HTML_CONTENT = """<!DOCTYPE html>
                             className="canvas-container"
                             ref={canvasRef}
                             onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
+                            onMouseUp={(e) => {
+                                if (isDraggingConnection) {
+                                    handleConnectionDragEnd(e);
+                                } else {
+                                    handleMouseUp();
+                                }
+                            }}
                             onClick={handleCanvasClick}
                         >
+                            <div className="zoom-controls">
+                                <button className="zoom-btn" onClick={handleZoomOut} title="Diminuir zoom">−</button>
+                                <div className="zoom-level">{Math.round(zoomLevel * 100)}%</div>
+                                <button className="zoom-btn" onClick={handleZoomIn} title="Aumentar zoom">+</button>
+                                <button className="zoom-btn" onClick={handleZoomReset} title="Resetar zoom">⊙</button>
+                            </div>
                             <svg className="connections">
                                 <defs>
                                     <marker
@@ -1152,41 +1642,52 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         <polygon points="0 0, 10 3, 0 6" fill="#4299e1" />
                                     </marker>
                                 </defs>
-                                {connections.map((conn, idx) => {
-                                    const fromEl = elements.find(el => el.id === conn.from);
-                                    const toEl = elements.find(el => el.id === conn.to);
-                                    if (!fromEl || !toEl) return null;
+                                <g transform={`scale(${zoomLevel})`}>
+                                    {connections.map((conn, idx) => {
+                                        const fromEl = elements.find(el => el.id === conn.from);
+                                        const toEl = elements.find(el => el.id === conn.to);
+                                        if (!fromEl || !toEl) return null;
 
-                                    const midX = (fromEl.x + toEl.x) / 2 + 100;
-                                    const midY = (fromEl.y + toEl.y) / 2 + 50;
+                                        const midX = (fromEl.x + toEl.x) / 2 + 100;
+                                        const midY = (fromEl.y + toEl.y) / 2 + 50;
 
-                                    return (
-                                        <g key={conn.id || idx}>
-                                            <path
-                                                className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
-                                                d={getConnectionPath(conn.from, conn.to)}
-                                                onClick={(e) => handleConnectionClick(e, conn)}
-                                            />
-                                            <rect
-                                                className="connection-label-bg"
-                                                x={midX - 20}
-                                                y={midY - 10}
-                                                width="40"
-                                                height="20"
-                                            />
-                                            <text
-                                                className="connection-label"
-                                                x={midX}
-                                                y={midY + 4}
-                                            >
-                                                {conn.conversion || 0}%
-                                            </text>
-                                        </g>
-                                    );
-                                })}
+                                        return (
+                                            <g key={conn.id || idx}>
+                                                <path
+                                                    className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
+                                                    d={getConnectionPath(conn.from, conn.to)}
+                                                    onClick={(e) => handleConnectionClick(e, conn)}
+                                                />
+                                                <rect
+                                                    className="connection-label-bg"
+                                                    x={midX - 20}
+                                                    y={midY - 10}
+                                                    width="40"
+                                                    height="20"
+                                                />
+                                                <text
+                                                    className="connection-label"
+                                                    x={midX}
+                                                    y={midY + 4}
+                                                >
+                                                    {conn.conversion || 0}%
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+                                    {isDraggingConnection && dragConnectionStart && dragConnectionEnd && (
+                                        <line
+                                            className="connection-drag-line"
+                                            x1={dragConnectionStart.x}
+                                            y1={dragConnectionStart.y}
+                                            x2={dragConnectionEnd.x}
+                                            y2={dragConnectionEnd.y}
+                                        />
+                                    )}
+                                </g>
                             </svg>
 
-                            <div className="canvas">
+                            <div className="canvas" style={{ transform: `scale(${zoomLevel})` }}>
                                 {elements.map(element => {
                                     const metrics = metricsMap[element.id]?.calculatedMetrics || {};
                                     return (
@@ -1194,18 +1695,25 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             key={element.id}
                                             className={`funnel-element ${element.color} ${
                                                 selectedElement === element.id ? 'selected' : ''
-                                            } ${isDragging && draggingElement === element.id ? 'dragging' : ''}`}
+                                            } ${isDragging && draggingElement === element.id ? 'dragging' : ''} ${
+                                                hoveredElement === element.id ? 'drag-hover' : ''
+                                            }`}
                                             style={{
                                                 left: element.x,
                                                 top: element.y
                                             }}
                                             onClick={(e) => handleElementClick(e, element)}
                                             onMouseDown={(e) => handleElementMouseDown(e, element)}
+                                            onMouseEnter={() => handleElementHover(element.id, true)}
+                                            onMouseLeave={() => handleElementHover(element.id, false)}
                                         >
                                             <div
-                                                className={`connection-point top ${connectingFrom === element.id ? 'connecting' : ''}`}
-                                                onClick={(e) => handleConnectionStart(e, element.id)}
-                                                title="Clique para conectar"
+                                                className={`connection-point left ${connectingFrom === element.id ? 'connecting' : ''}`}
+                                                onMouseDown={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                }}
+                                                title="Entrada - Arraste uma conexão até aqui"
                                             />
 
                                             <div className="element-header">
@@ -1214,10 +1722,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <div className="element-actions">
                                                     <button
                                                         className="element-btn"
-                                                        onClick={(e) => handleConnectionStart(e, element.id)}
-                                                        title={connectingFrom ? "Clique aqui ou em um ponto de conexão" : "Modo de conexão"}
+                                                        onMouseDown={(e) => handleConnectionStart(e, element.id)}
+                                                        title="Segurar e arrastar para conectar"
                                                     >
-                                                        {connectingFrom === element.id ? '⏸️' : '🔗'}
+                                                        🔗
                                                     </button>
                                                     <button
                                                         className="element-btn"
@@ -1287,14 +1795,46 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             </div>
 
                                             <div
-                                                className={`connection-point bottom ${connectingFrom === element.id ? 'connecting' : ''}`}
-                                                onClick={(e) => handleConnectionStart(e, element.id)}
-                                                title="Clique para conectar"
+                                                className={`connection-point right ${connectingFrom === element.id ? 'connecting' : ''}`}
+                                                onMouseDown={(e) => handleConnectionStart(e, element.id)}
+                                                title="Saída - Segurar e arrastar para conectar"
                                             />
                                         </div>
                                     );
                                 })}
                             </div>
+
+                            {showElementMenu && (
+                                <div
+                                    className="element-menu-popup"
+                                    style={{
+                                        left: elementMenuPosition.x,
+                                        top: elementMenuPosition.y,
+                                        transform: `scale(${1 / zoomLevel})`
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <h4>➕ Adicionar Elemento</h4>
+                                    {ELEMENT_CATEGORIES.map((category, idx) => (
+                                        <div key={idx} className="popup-category">
+                                            <div className="popup-category-header">
+                                                <span className="popup-category-icon">{category.icon}</span>
+                                                <span className="popup-category-name">{category.name}</span>
+                                            </div>
+                                            {category.elements.map(type => (
+                                                <div
+                                                    key={type.type}
+                                                    className={`popup-element-item ${type.color}`}
+                                                    onClick={() => handleElementMenuSelect(type)}
+                                                >
+                                                    <span className="element-icon">{type.icon}</span>
+                                                    <span>{type.name}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="properties-panel">
@@ -1315,12 +1855,27 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     {/* Campos específicos para TRÁFEGO */}
                                     {selectedElementData.type === 'trafego' && !connections.some(conn => conn.to === selectedElementData.id) && (
                                         <>
+                                            <div className="traffic-mode-toggle">
+                                                <div
+                                                    className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
+                                                    onClick={() => updateElementProperty('trafficMode', 'absolute')}
+                                                >
+                                                    📊 Números Absolutos
+                                                </div>
+                                                <div
+                                                    className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
+                                                    onClick={() => updateElementProperty('trafficMode', 'metrics')}
+                                                >
+                                                    📈 CTR & CPM
+                                                </div>
+                                            </div>
+
                                             <div className="form-group">
-                                                <label className="form-label">💰 Investimento Planejado</label>
+                                                <label className="form-label">💰 Investimento Planejado (R$)</label>
                                                 <input
                                                     type="number"
                                                     className={`form-input ${validateValue('investment', selectedElementData.investment).type || ''}`}
-                                                    value={selectedElementData.investment || 0}
+                                                    value={selectedElementData.investment === 0 ? '' : selectedElementData.investment}
                                                     onChange={(e) => updateElementProperty('investment', e.target.value)}
                                                     placeholder="Ex: 10000"
                                                     step="0.01"
@@ -1332,28 +1887,83 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="form-group">
-                                                <label className="form-label">👁️ Impressões Esperadas</label>
-                                                <input
-                                                    type="number"
-                                                    className={`form-input ${validateValue('impressions', selectedElementData.impressions).type || ''}`}
-                                                    value={selectedElementData.impressions || 0}
-                                                    onChange={(e) => updateElementProperty('impressions', e.target.value)}
-                                                    placeholder="Ex: 100000"
-                                                />
-                                                <small className="form-help">Quantas pessoas verão seu anúncio?</small>
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">👆 Cliques Esperados</label>
-                                                <input
-                                                    type="number"
-                                                    className={`form-input ${validateValue('clicks', selectedElementData.clicks).type || ''}`}
-                                                    value={selectedElementData.clicks || 0}
-                                                    onChange={(e) => updateElementProperty('clicks', e.target.value)}
-                                                    placeholder="Ex: 2000"
-                                                />
-                                                <small className="form-help">Quantas pessoas clicarão? (CTR: {selectedElementData.impressions > 0 ? ((selectedElementData.clicks / selectedElementData.impressions) * 100).toFixed(2) : 0}%)</small>
-                                            </div>
+
+                                            {selectedElementData.trafficMode === 'absolute' ? (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">👁️ Impressões Esperadas</label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${validateValue('impressions', selectedElementData.impressions).type || ''}`}
+                                                            value={selectedElementData.impressions === 0 ? '' : selectedElementData.impressions}
+                                                            onChange={(e) => updateElementProperty('impressions', e.target.value)}
+                                                            placeholder="Ex: 100000"
+                                                        />
+                                                        <small className="form-help">Quantas pessoas verão seu anúncio?</small>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label">👆 Cliques Esperados</label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${validateValue('clicks', selectedElementData.clicks).type || ''}`}
+                                                            value={selectedElementData.clicks === 0 ? '' : selectedElementData.clicks}
+                                                            onChange={(e) => updateElementProperty('clicks', e.target.value)}
+                                                            placeholder="Ex: 2000"
+                                                        />
+                                                        <small className="form-help">Quantas pessoas clicarão? (CTR calculado: {selectedElementData.ctr}%)</small>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">💵 CPM - Custo por Mil (R$)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={selectedElementData.cpm === 0 ? '' : selectedElementData.cpm}
+                                                            onChange={(e) => updateElementProperty('cpm', e.target.value)}
+                                                            placeholder="Ex: 25"
+                                                            step="0.01"
+                                                        />
+                                                        <small className="form-help">Quanto custa 1000 impressões? (Impressões calculadas: {selectedElementData.impressions.toLocaleString('pt-BR')})</small>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label">📊 CTR - Taxa de Cliques (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={selectedElementData.ctr === 0 ? '' : selectedElementData.ctr}
+                                                            onChange={(e) => updateElementProperty('ctr', e.target.value)}
+                                                            placeholder="Ex: 2"
+                                                            step="0.01"
+                                                        />
+                                                        <small className="form-help">% de pessoas que clicam no anúncio (Cliques calculados: {selectedElementData.clicks.toLocaleString('pt-BR')})</small>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {selectedElementData.clicks > 0 && (
+                                                <div className="benchmark-box" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none'}}>
+                                                    <h4 style={{color: 'white'}}>👥 TRÁFEGO PARA PRÓXIMA ETAPA</h4>
+                                                    <div className="benchmark-item" style={{fontSize: '16px', fontWeight: 'bold'}}>
+                                                        <span>• {selectedElementData.clicks.toLocaleString('pt-BR')} pessoas chegarão na próxima página</span>
+                                                    </div>
+                                                    {selectedElementData.impressions > 0 && (
+                                                        <>
+                                                            <div className="benchmark-item">
+                                                                <span>• CTR: {selectedElementData.ctr > 0 ? selectedElementData.ctr : ((selectedElementData.clicks / selectedElementData.impressions) * 100).toFixed(2)}%</span>
+                                                            </div>
+                                                            <div className="benchmark-item">
+                                                                <span>• CPM: R$ {selectedElementData.cpm > 0 ? selectedElementData.cpm.toFixed(2) : ((selectedElementData.investment / selectedElementData.impressions) * 1000).toFixed(2)}</span>
+                                                            </div>
+                                                            <div className="benchmark-item">
+                                                                <span>• CPC: R$ {(selectedElementData.investment / selectedElementData.clicks).toFixed(2)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {(() => {
                                                 const metrics = calculateMetrics()[selectedElementData.id]?.calculatedMetrics;
                                                 return metrics && (
@@ -1404,7 +2014,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <input
                                                     type="number"
                                                     className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
-                                                    value={selectedElementData.conversionRate || 0}
+                                                    value={selectedElementData.conversionRate === 0 ? '' : selectedElementData.conversionRate}
                                                     onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
                                                     min="0"
                                                     max="100"
@@ -1463,7 +2073,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <input
                                                     type="number"
                                                     className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
-                                                    value={selectedElementData.conversionRate || 0}
+                                                    value={selectedElementData.conversionRate === 0 ? '' : selectedElementData.conversionRate}
                                                     onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
                                                     min="0"
                                                     max="100"
@@ -1495,7 +2105,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         <input
                                                             type="number"
                                                             className={`form-input ${validateValue('price', selectedElementData.price).type || ''}`}
-                                                            value={selectedElementData.price}
+                                                            value={selectedElementData.price === 0 ? '' : selectedElementData.price}
                                                             onChange={(e) => updateElementProperty('price', e.target.value)}
                                                             step="0.01"
                                                             placeholder="Ex: 197.00"
@@ -1525,6 +2135,62 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         );
                                                     })()}
                                                 </>
+                                            )}
+                                            {selectedElementData.type === 'captura' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - PÁGINA DE CAPTURA</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20-40%: Taxa típica de conversão</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40-60%: Muito boa!</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 60%+: Excepcional!</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'vsl' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - VSL</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40-60%: Taxa de play</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Assistem até o final</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 5-15%: Conversão típica de VSL</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'vendas' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - PÁGINA DE VENDAS</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 2-5%: Tráfego frio</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 5-15%: Tráfego qualificado</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 15%+: Tráfego ultra-qualificado</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'squeeze' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - SQUEEZE PAGE</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Taxa típica</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 50-70%: Muito boa!</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 70%+: Squeeze page otimizada!</span>
+                                                    </div>
+                                                </div>
                                             )}
                                             {selectedElementData.type === 'checkout' && (
                                                 <div className="benchmark-box">
@@ -1704,9 +2370,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         <input
                                             type="number"
                                             className="form-input"
-                                            value={connections.find(c => c.id === selectedConnection)?.conversion || 0}
+                                            value={connections.find(c => c.id === selectedConnection)?.conversion === 0 ? '' : connections.find(c => c.id === selectedConnection)?.conversion}
                                             onChange={(e) => updateConnectionProperty('conversion', e.target.value)}
                                             step="0.1"
+                                            placeholder="Ex: 10"
                                         />
                                     </div>
                                     <div className="empty-state" style={{marginTop: '20px'}}>
