@@ -66,6 +66,26 @@ HTML_CONTENT = """<!DOCTYPE html>
         .metric-value {
             font-size: 28px;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .metric-status {
+            font-size: 20px;
+        }
+
+        .metric-positive {
+            color: #48bb78;
+        }
+
+        .metric-negative {
+            color: #f56565;
+        }
+
+        .metric-neutral {
+            color: #ecc94b;
         }
 
         .main-content {
@@ -139,7 +159,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .funnel-element {
             position: absolute;
-            width: 200px;
+            width: 220px;
             padding: 15px;
             border-radius: 12px;
             cursor: move;
@@ -343,6 +363,87 @@ HTML_CONTENT = """<!DOCTYPE html>
             border-color: #4299e1;
         }
 
+        .form-input.error {
+            border-color: #f56565;
+            background-color: #fff5f5;
+        }
+
+        .form-input.warning {
+            border-color: #ecc94b;
+            background-color: #fffff0;
+        }
+
+        .form-input.success {
+            border-color: #48bb78;
+            background-color: #f0fff4;
+        }
+
+        .form-help {
+            display: block;
+            font-size: 12px;
+            color: #718096;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .form-help::before {
+            content: "↳ ";
+            color: #a0aec0;
+        }
+
+        .validation-message {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            margin-top: 6px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .validation-message.error {
+            color: #c53030;
+            background-color: #fff5f5;
+        }
+
+        .validation-message.warning {
+            color: #975a16;
+            background-color: #fffff0;
+        }
+
+        .validation-message.success {
+            color: #276749;
+            background-color: #f0fff4;
+        }
+
+        .benchmark-box {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 12px;
+            border-left: 3px solid #4299e1;
+        }
+
+        .benchmark-box h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .benchmark-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: #4a5568;
+        }
+
+        .benchmark-item:last-child {
+            margin-bottom: 0;
+        }
+
         .form-checkbox {
             display: flex;
             align-items: center;
@@ -382,10 +483,18 @@ HTML_CONTENT = """<!DOCTYPE html>
         .color-trafego { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .color-landing { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .color-email { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .color-sequencia { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
+        .color-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); }
+        .color-quiz { background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%); }
         .color-video { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
         .color-webinar { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .color-countdown { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+        .color-call { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
         .color-checkout { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
         .color-upsell { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
+        .color-downsell { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
+        .color-membros { background: linear-gradient(135deg, #8e44ad 0%, #c0392b 100%); }
+        .color-retargeting { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
         .color-obrigado { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
 
         /* Login Screen Styles */
@@ -513,10 +622,18 @@ HTML_CONTENT = """<!DOCTYPE html>
             { type: 'trafego', name: 'Tráfego', icon: '🎯', color: 'color-trafego' },
             { type: 'landing', name: 'Landing Page', icon: '📄', color: 'color-landing' },
             { type: 'email', name: 'Email', icon: '✉️', color: 'color-email' },
-            { type: 'video', name: 'Vídeo', icon: '🎬', color: 'color-video' },
+            { type: 'sequencia', name: 'Sequência Email', icon: '📧', color: 'color-sequencia' },
+            { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' },
+            { type: 'quiz', name: 'Quiz/Enquete', icon: '📊', color: 'color-quiz' },
+            { type: 'video', name: 'Vídeo/VSL', icon: '🎬', color: 'color-video' },
             { type: 'webinar', name: 'Webinar', icon: '🎥', color: 'color-webinar' },
+            { type: 'countdown', name: 'Countdown', icon: '⏰', color: 'color-countdown' },
+            { type: 'call', name: 'Call/Consulta', icon: '📞', color: 'color-call' },
             { type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout' },
             { type: 'upsell', name: 'Upsell', icon: '⬆️', color: 'color-upsell' },
+            { type: 'downsell', name: 'Downsell', icon: '🎁', color: 'color-downsell' },
+            { type: 'membros', name: 'Área Membros', icon: '📚', color: 'color-membros' },
+            { type: 'retargeting', name: 'Retargeting', icon: '🔄', color: 'color-retargeting' },
             { type: 'obrigado', name: 'Obrigado', icon: '🎉', color: 'color-obrigado' }
         ];
 
@@ -690,6 +807,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 let totalProfit = 0;
                 let totalSales = 0;
                 let totalInvestment = 0;
+                let totalVisitors = 0;
 
                 Object.values(metricsMap).forEach(el => {
                     if (el.calculatedMetrics) {
@@ -699,6 +817,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                         // Soma investimento apenas dos elementos raiz
                         if (el.calculatedMetrics.cost > 0) {
                             totalInvestment += el.calculatedMetrics.cost;
+                        }
+
+                        // Conta visitantes dos elementos de tráfego
+                        if (el.type === 'trafego') {
+                            totalVisitors += el.clicks || 0;
                         }
                     }
                 });
@@ -711,7 +834,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                     profit: totalProfit,
                     roi: roi,
                     sales: totalSales,
-                    investment: totalInvestment
+                    investment: totalInvestment,
+                    visitors: totalVisitors
                 };
             };
 
@@ -869,6 +993,39 @@ HTML_CONTENT = """<!DOCTYPE html>
                 }
             };
 
+            const validateValue = (property, value) => {
+                const numValue = parseFloat(value) || 0;
+
+                // Validações para percentuais
+                if (['conversionRate', 'pageViewRate'].includes(property)) {
+                    if (numValue < 0) return { valid: false, type: 'error', message: '❌ O valor não pode ser negativo' };
+                    if (numValue > 100) return { valid: false, type: 'error', message: '❌ O valor não pode ser maior que 100%' };
+
+                    // Warnings para taxas de conversão
+                    if (property === 'conversionRate') {
+                        if (numValue < 1) return { valid: true, type: 'warning', message: '⚠️ Taxa muito baixa. Típico: 5-15%' };
+                        if (numValue > 50) return { valid: true, type: 'warning', message: '⚠️ Taxa muito alta. Verifique se está correto' };
+                        if (numValue >= 10 && numValue <= 30) return { valid: true, type: 'success', message: '✅ Ótima taxa de conversão!' };
+                    }
+                }
+
+                // Validações para valores monetários
+                if (['investment', 'price'].includes(property)) {
+                    if (numValue < 0) return { valid: false, type: 'error', message: '❌ O valor não pode ser negativo' };
+                    if (numValue > 1000000) return { valid: true, type: 'warning', message: '⚠️ Valor muito alto. Confirme se está correto' };
+                }
+
+                // Validações para impressões e cliques
+                if (property === 'impressions' && numValue < 1) {
+                    return { valid: true, type: 'warning', message: '⚠️ Configure as impressões esperadas' };
+                }
+                if (property === 'clicks' && numValue < 1) {
+                    return { valid: true, type: 'warning', message: '⚠️ Configure os cliques esperados' };
+                }
+
+                return { valid: true, type: null, message: null };
+            };
+
             const updateElementProperty = (property, value) => {
                 setElements(elements.map(el => {
                     if (el.id === selectedElement) {
@@ -923,33 +1080,36 @@ HTML_CONTENT = """<!DOCTYPE html>
                 <div className="app">
                     <div className="dashboard">
                         <div className="metric">
-                            <div className="metric-label">Investimento</div>
+                            <div className="metric-label">🎯 Visitantes Iniciais</div>
+                            <div className="metric-value">
+                                {dashboardMetrics.visitors.toLocaleString('pt-BR')}
+                            </div>
+                        </div>
+                        <div className="metric">
+                            <div className="metric-label">💰 Investimento Total</div>
                             <div className="metric-value">
                                 R$ {dashboardMetrics.investment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">Receita Total</div>
+                            <div className="metric-label">🛒 Conversões Esperadas</div>
+                            <div className="metric-value">
+                                {dashboardMetrics.sales.toLocaleString('pt-BR')}
+                            </div>
+                        </div>
+                        <div className="metric">
+                            <div className="metric-label">💵 Receita Projetada</div>
                             <div className="metric-value">
                                 R$ {dashboardMetrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">Lucro Total</div>
+                            <div className="metric-label">📈 ROI Projetado</div>
                             <div className="metric-value">
-                                R$ {dashboardMetrics.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </div>
-                        </div>
-                        <div className="metric">
-                            <div className="metric-label">ROI</div>
-                            <div className="metric-value">
+                                <span className={dashboardMetrics.roi >= 100 ? 'metric-positive' : dashboardMetrics.roi >= 0 ? 'metric-neutral' : 'metric-negative'}>
+                                    {dashboardMetrics.roi >= 100 ? '✅' : dashboardMetrics.roi >= 0 ? '⚠️' : '❌'}
+                                </span>
                                 {dashboardMetrics.roi.toFixed(1)}%
-                            </div>
-                        </div>
-                        <div className="metric">
-                            <div className="metric-label">Total de Vendas</div>
-                            <div className="metric-value">
-                                {dashboardMetrics.sales.toLocaleString('pt-BR')}
                             </div>
                         </div>
                     </div>
@@ -1074,45 +1234,52 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     // Métricas para Tráfego
                                                     <>
                                                         <div className="metric-row">
-                                                            <span>💰 Investimento:</span>
-                                                            <strong>R$ {(metrics.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                                            <span>👁️ {(element.impressions || 0).toLocaleString('pt-BR')} impressões</span>
                                                         </div>
                                                         <div className="metric-row">
-                                                            <span>📊 CPM:</span>
-                                                            <strong>R$ {(metrics.cpm || 0).toFixed(2)}</strong>
+                                                            <span>👆 {(element.clicks || 0).toLocaleString('pt-BR')} cliques ({element.impressions > 0 ? ((element.clicks / element.impressions) * 100).toFixed(1) : 0}%)</span>
                                                         </div>
-                                                        <div className="metric-row">
-                                                            <span>💵 Custo/Lead:</span>
-                                                            <strong>R$ {(metrics.costPerLead || 0).toFixed(2)}</strong>
+                                                        <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
+                                                            <div className="metric-row">
+                                                                <span>💰 R$ {(metrics.investment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                            <div className="metric-row">
+                                                                <span>💵 R$ {(metrics.costPerLead || 0).toFixed(2)}/clique</span>
+                                                            </div>
                                                         </div>
                                                     </>
                                                 ) : element.type === 'landing' ? (
                                                     // Métricas para Landing Page
                                                     <>
                                                         <div className="metric-row">
-                                                            <span>👥 Visitas:</span>
-                                                            <strong>{metrics.visits?.toLocaleString('pt-BR') || 0}</strong>
+                                                            <span>👥 {metrics.visits?.toLocaleString('pt-BR') || 0} visitantes</span>
                                                         </div>
                                                         <div className="metric-row">
-                                                            <span>✅ Leads:</span>
-                                                            <strong>{metrics.leads?.toLocaleString('pt-BR') || 0}</strong>
+                                                            <span>✅ {metrics.leads?.toLocaleString('pt-BR') || 0} conversões ({element.conversionRate || 0}%)</span>
+                                                        </div>
+                                                        <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
+                                                            <div className="metric-row">
+                                                                <span>📊 Taxa: {element.conversionRate || 0}%</span>
+                                                            </div>
                                                         </div>
                                                     </>
                                                 ) : (
                                                     // Métricas para outros elementos
                                                     <>
                                                         <div className="metric-row">
-                                                            <span>👥 Visitas:</span>
-                                                            <strong>{metrics.visits?.toLocaleString('pt-BR') || 0}</strong>
+                                                            <span>👥 {metrics.visits?.toLocaleString('pt-BR') || 0} pessoas</span>
                                                         </div>
                                                         <div className="metric-row">
-                                                            <span>✅ Leads:</span>
-                                                            <strong>{metrics.leads?.toLocaleString('pt-BR') || 0}</strong>
+                                                            <span>{metrics.revenue > 0 ? '🛒' : '✅'} {metrics.leads?.toLocaleString('pt-BR') || 0} {metrics.revenue > 0 ? 'vendas' : 'conversões'} ({element.conversionRate || 0}%)</span>
                                                         </div>
                                                         {metrics.revenue > 0 && (
-                                                            <div className="metric-row">
-                                                                <span>💰 Receita:</span>
-                                                                <strong>R$ {(metrics.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                                                            <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
+                                                                <div className="metric-row">
+                                                                    <span>💰 R$ {element.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'} cada</span>
+                                                                </div>
+                                                                <div className="metric-row">
+                                                                    <span>💵 R$ {(metrics.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} total</span>
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </>
@@ -1149,54 +1316,57 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     {selectedElementData.type === 'trafego' && !connections.some(conn => conn.to === selectedElementData.id) && (
                                         <>
                                             <div className="form-group">
-                                                <label className="form-label">💰 Investimento em Tráfego (R$)</label>
+                                                <label className="form-label">💰 Investimento Planejado</label>
                                                 <input
                                                     type="number"
-                                                    className="form-input"
+                                                    className={`form-input ${validateValue('investment', selectedElementData.investment).type || ''}`}
                                                     value={selectedElementData.investment || 0}
                                                     onChange={(e) => updateElementProperty('investment', e.target.value)}
                                                     placeholder="Ex: 10000"
+                                                    step="0.01"
                                                 />
+                                                <small className="form-help">Quanto você pretende investir em anúncios?</small>
+                                                {validateValue('investment', selectedElementData.investment).message && (
+                                                    <div className={`validation-message ${validateValue('investment', selectedElementData.investment).type}`}>
+                                                        {validateValue('investment', selectedElementData.investment).message}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">👁️ Impressões</label>
+                                                <label className="form-label">👁️ Impressões Esperadas</label>
                                                 <input
                                                     type="number"
-                                                    className="form-input"
+                                                    className={`form-input ${validateValue('impressions', selectedElementData.impressions).type || ''}`}
                                                     value={selectedElementData.impressions || 0}
                                                     onChange={(e) => updateElementProperty('impressions', e.target.value)}
                                                     placeholder="Ex: 100000"
                                                 />
+                                                <small className="form-help">Quantas pessoas verão seu anúncio?</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">👆 Cliques</label>
+                                                <label className="form-label">👆 Cliques Esperados</label>
                                                 <input
                                                     type="number"
-                                                    className="form-input"
+                                                    className={`form-input ${validateValue('clicks', selectedElementData.clicks).type || ''}`}
                                                     value={selectedElementData.clicks || 0}
                                                     onChange={(e) => updateElementProperty('clicks', e.target.value)}
                                                     placeholder="Ex: 2000"
                                                 />
+                                                <small className="form-help">Quantas pessoas clicarão? (CTR: {selectedElementData.impressions > 0 ? ((selectedElementData.clicks / selectedElementData.impressions) * 100).toFixed(2) : 0}%)</small>
                                             </div>
                                             {(() => {
                                                 const metrics = calculateMetrics()[selectedElementData.id]?.calculatedMetrics;
                                                 return metrics && (
-                                                    <div className="form-group">
-                                                        <div style={{
-                                                            background: '#f7fafc',
-                                                            padding: '12px',
-                                                            borderRadius: '8px',
-                                                            fontSize: '13px'
-                                                        }}>
-                                                            <div style={{marginBottom: '8px'}}>
-                                                                <strong>📊 CPM:</strong> R$ {metrics.cpm.toFixed(2)}
-                                                            </div>
-                                                            <div style={{marginBottom: '8px'}}>
-                                                                <strong>📈 CTR:</strong> {metrics.ctr.toFixed(2)}%
-                                                            </div>
-                                                            <div>
-                                                                <strong>💵 Custo/Clique:</strong> R$ {metrics.costPerLead.toFixed(2)}
-                                                            </div>
+                                                    <div className="benchmark-box">
+                                                        <h4>📊 MÉTRICAS CALCULADAS</h4>
+                                                        <div className="benchmark-item">
+                                                            <span>• CPM: R$ {metrics.cpm.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• Custo/Clique: R$ {metrics.costPerLead.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• CTR: {metrics.ctr.toFixed(2)}%</span>
                                                         </div>
                                                     </div>
                                                 );
@@ -1208,56 +1378,57 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     {selectedElementData.type === 'landing' && (
                                         <>
                                             <div className="form-group">
-                                                <label className="form-label">🔗 URL da Landing Page</label>
+                                                <label className="form-label">🔗 URL da Landing Page (opcional)</label>
                                                 <input
                                                     type="text"
                                                     className="form-input"
                                                     value={selectedElementData.url || ''}
                                                     onChange={(e) => updateElementProperty('url', e.target.value)}
-                                                    placeholder="https://..."
+                                                    placeholder="https://meusite.com/cadastro"
                                                 />
+                                                <small className="form-help">URL da sua página de captura</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">📝 Descrição</label>
+                                                <label className="form-label">📝 Descrição (opcional)</label>
                                                 <input
                                                     type="text"
                                                     className="form-input"
                                                     value={selectedElementData.description || ''}
                                                     onChange={(e) => updateElementProperty('description', e.target.value)}
-                                                    placeholder="Descrição da landing page..."
+                                                    placeholder="Ex: Página de cadastro para webinar gratuito"
                                                 />
+                                                <small className="form-help">Descreva o objetivo desta página</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">👁️ % Visualização de Página</label>
+                                                <label className="form-label">✅ Taxa de Conversão (%)</label>
                                                 <input
                                                     type="number"
-                                                    className="form-input"
-                                                    value={selectedElementData.pageViewRate || 100}
-                                                    onChange={(e) => updateElementProperty('pageViewRate', e.target.value)}
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    placeholder="Ex: 85"
-                                                />
-                                                <small style={{fontSize: '11px', color: '#718096', marginTop: '4px', display: 'block'}}>
-                                                    % de visitantes que carregam a página completamente
-                                                </small>
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">✅ % Taxa de Conversão</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
+                                                    className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
                                                     value={selectedElementData.conversionRate || 0}
                                                     onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
                                                     min="0"
                                                     max="100"
                                                     step="0.1"
-                                                    placeholder="Ex: 10"
+                                                    placeholder="Ex: 15"
                                                 />
-                                                <small style={{fontSize: '11px', color: '#718096', marginTop: '4px', display: 'block'}}>
-                                                    % de pessoas que visualizaram e converteram
-                                                </small>
+                                                <small className="form-help">% de visitantes que preencherão o formulário</small>
+                                                {validateValue('conversionRate', selectedElementData.conversionRate).message && (
+                                                    <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
+                                                        {validateValue('conversionRate', selectedElementData.conversionRate).message}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="benchmark-box">
+                                                <h4>📋 BENCHMARKS DO MERCADO</h4>
+                                                <div className="benchmark-item">
+                                                    <span>• 5-15%: Bom para captura de leads</span>
+                                                </div>
+                                                <div className="benchmark-item">
+                                                    <span>• 15-30%: Excelente conversão!</span>
+                                                </div>
+                                                <div className="benchmark-item">
+                                                    <span>• 30%+: Landing otimizada profissionalmente</span>
+                                                </div>
                                             </div>
                                         </>
                                     )}
@@ -1266,43 +1437,32 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     {selectedElementData.type !== 'trafego' && selectedElementData.type !== 'landing' && (
                                         <>
                                             <div className="form-group">
-                                                <label className="form-label">🔗 URL</label>
+                                                <label className="form-label">🔗 URL (opcional)</label>
                                                 <input
                                                     type="text"
                                                     className="form-input"
                                                     value={selectedElementData.url || ''}
                                                     onChange={(e) => updateElementProperty('url', e.target.value)}
-                                                    placeholder="https://..."
+                                                    placeholder="https://meusite.com/checkout"
                                                 />
+                                                <small className="form-help">Link da página deste elemento</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">📝 Descrição</label>
+                                                <label className="form-label">📝 Descrição (opcional)</label>
                                                 <input
                                                     type="text"
                                                     className="form-input"
                                                     value={selectedElementData.description || ''}
                                                     onChange={(e) => updateElementProperty('description', e.target.value)}
-                                                    placeholder="Descrição..."
+                                                    placeholder="Ex: Página de vendas do produto principal"
                                                 />
+                                                <small className="form-help">Descreva este elemento do funil</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">👁️ % Visualização de Página</label>
+                                                <label className="form-label">✅ Taxa de Conversão (%)</label>
                                                 <input
                                                     type="number"
-                                                    className="form-input"
-                                                    value={selectedElementData.pageViewRate || 100}
-                                                    onChange={(e) => updateElementProperty('pageViewRate', e.target.value)}
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    placeholder="Ex: 85"
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">✅ % Taxa de Conversão</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
+                                                    className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
                                                     value={selectedElementData.conversionRate || 0}
                                                     onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
                                                     min="0"
@@ -1310,6 +1470,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     step="0.1"
                                                     placeholder="Ex: 10"
                                                 />
+                                                <small className="form-help">% de pessoas que completarão a ação desejada</small>
+                                                {validateValue('conversionRate', selectedElementData.conversionRate).message && (
+                                                    <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
+                                                        {validateValue('conversionRate', selectedElementData.conversionRate).message}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="form-group">
                                                 <div className="form-checkbox">
@@ -1323,16 +1489,209 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 </div>
                                             </div>
                                             {selectedElementData.generatesRevenue && (
-                                                <div className="form-group">
-                                                    <label className="form-label">💵 Valor da Venda (R$)</label>
-                                                    <input
-                                                        type="number"
-                                                        className="form-input"
-                                                        value={selectedElementData.price}
-                                                        onChange={(e) => updateElementProperty('price', e.target.value)}
-                                                        step="0.01"
-                                                        placeholder="Ex: 197.00"
-                                                    />
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">💵 Preço do Produto (R$)</label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${validateValue('price', selectedElementData.price).type || ''}`}
+                                                            value={selectedElementData.price}
+                                                            onChange={(e) => updateElementProperty('price', e.target.value)}
+                                                            step="0.01"
+                                                            placeholder="Ex: 197.00"
+                                                        />
+                                                        <small className="form-help">Valor que será cobrado por venda</small>
+                                                        {validateValue('price', selectedElementData.price).message && (
+                                                            <div className={`validation-message ${validateValue('price', selectedElementData.price).type}`}>
+                                                                {validateValue('price', selectedElementData.price).message}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {(() => {
+                                                        const metrics = calculateMetrics()[selectedElementData.id]?.calculatedMetrics;
+                                                        return metrics && metrics.revenue > 0 && (
+                                                            <div className="benchmark-box">
+                                                                <h4>📊 PREVISÃO DE VENDAS</h4>
+                                                                <div className="benchmark-item">
+                                                                    <span>• Visitantes: {metrics.visits?.toLocaleString('pt-BR') || 0}</span>
+                                                                </div>
+                                                                <div className="benchmark-item">
+                                                                    <span>• Vendas: {metrics.leads?.toLocaleString('pt-BR') || 0} ({selectedElementData.conversionRate || 0}%)</span>
+                                                                </div>
+                                                                <div className="benchmark-item">
+                                                                    <span>• Receita: R$ {metrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </>
+                                            )}
+                                            {selectedElementData.type === 'checkout' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - CHECKOUT</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 1-3%: Típico e-commerce</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 5-10%: Checkout otimizado</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20%+: Tráfego ultra-qualificado</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'upsell' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - UPSELL</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 10-20%: Taxa típica de aceitação</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20-40%: Oferta bem alinhada</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40%+: Upsell irresistível!</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'downsell' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - DOWNSELL</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20-30%: Taxa típica de aceitação</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Boa oferta alternativa</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 50%+: Downsell muito atrativo!</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'whatsapp' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - WHATSAPP</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40-60%: Taxa de abertura</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 15-25%: Taxa de resposta</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 60%+: Excelente engajamento!</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'sequencia' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - SEQUÊNCIA EMAIL</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 15-25%: Taxa de abertura</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 2-5%: Taxa de clique</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 10-20%: Conversão final da sequência</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'quiz' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - QUIZ</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Taxa de conclusão do quiz</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 50-70%: Taxa de captura de email</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• Aumenta engajamento em 2-3x</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'video' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - VÍDEO/VSL</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40-60%: Taxa de play</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Assistem até o final</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 5-15%: Conversão típica de VSL</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'webinar' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - WEBINAR</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Taxa de comparecimento</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 10-25%: Conversão em vendas</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40%+: Webinars de alta conversão</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'countdown' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - COUNTDOWN</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• Aumenta conversão em 20-40%</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• Reduz tempo de decisão em 60%</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• Ideal: 24-72h de urgência</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'call' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - CALL/CONSULTA</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20-40%: Taxa de agendamento</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 60-80%: Comparecimento na call</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 30-50%: Fechamento na call</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'membros' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - ÁREA MEMBROS</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 70-90%: Taxa de acesso inicial</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 40-60%: Conclusão do conteúdo</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 80-95%: Retenção mensal</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'retargeting' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - RETARGETING</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 2-5%: CTR típico de anúncios</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 10-30%: Conversão de retargeting</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• CPC 50-70% menor que cold traffic</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </>
