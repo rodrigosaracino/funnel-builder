@@ -986,9 +986,37 @@ HTML_CONTENT = """<!DOCTYPE html>
             );
         }
 
-        function FunnelBuilder() {
+        function FunnelBuilder({ funnelId, onBack }) {
             const [elements, setElements] = useState([]);
             const [connections, setConnections] = useState([]);
+            const [currentFunnel, setCurrentFunnel] = useState(null);
+
+            // Carrega o funil específico
+            React.useEffect(() => {
+                if (funnelId) {
+                    const funnels = JSON.parse(localStorage.getItem('funnels') || '[]');
+                    const funnel = funnels.find(f => f.id === funnelId);
+                    if (funnel) {
+                        setCurrentFunnel(funnel);
+                        setElements(funnel.elements || []);
+                        setConnections(funnel.connections || []);
+                    }
+                }
+            }, [funnelId]);
+
+            // Auto-salva quando elementos ou conexões mudam
+            React.useEffect(() => {
+                if (funnelId && currentFunnel) {
+                    const funnels = JSON.parse(localStorage.getItem('funnels') || '[]');
+                    const updated = funnels.map(f => {
+                        if (f.id === funnelId) {
+                            return { ...f, elements, connections };
+                        }
+                        return f;
+                    });
+                    localStorage.setItem('funnels', JSON.stringify(updated));
+                }
+            }, [elements, connections, funnelId, currentFunnel]);
             const [selectedElement, setSelectedElement] = useState(null);
             const [selectedConnection, setSelectedConnection] = useState(null);
             const [draggingElement, setDraggingElement] = useState(null);
@@ -1086,8 +1114,20 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                     // Propaga para elementos filhos usando a taxa de conversão da conexão
                     element.childConnections.forEach(conn => {
+                        const childElement = elementMap[conn.to];
                         const conversionRate = conn.conversion || 0;
-                        const childTraffic = Math.round(leads * (conversionRate / 100));
+                        let childTraffic = 0;
+
+                        // Se o elemento filho é um Downsell, envia os NÃO convertidos
+                        if (childElement && childElement.type === 'downsell') {
+                            // Downsell recebe quem NÃO converteu (pageViews - leads)
+                            const nonConverted = pageViews - leads;
+                            childTraffic = Math.round(nonConverted * (conversionRate / 100));
+                        } else {
+                            // Elementos normais recebem os convertidos (leads)
+                            childTraffic = Math.round(leads * (conversionRate / 100));
+                        }
+
                         calculateForElement(conn.to, childTraffic, investment);
                     });
                 };
@@ -1549,6 +1589,11 @@ HTML_CONTENT = """<!DOCTYPE html>
             return (
                 <div className="app">
                     <div className="dashboard">
+                        {onBack && (
+                            <button onClick={onBack} style={{ padding: '10px 20px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                                ← Voltar
+                            </button>
+                        )}
                         <div className="metric">
                             <div className="metric-label">🎯 Visitantes Iniciais</div>
                             <div className="metric-value">
@@ -2391,9 +2436,199 @@ HTML_CONTENT = """<!DOCTYPE html>
             );
         }
 
+        // Templates de Funis Prontos
+        const FUNNEL_TEMPLATES = [
+            {
+                id: 'vsl-simples',
+                name: 'VSL Simples',
+                icon: '🎬',
+                description: 'Tráfego → Landing → VSL → Checkout',
+                elements: [
+                    { id: 1, type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego', x: 100, y: 150, trafficMode: 'absolute', investment: 3000, impressions: 150000, clicks: 5000 },
+                    { id: 2, type: 'landing', name: 'Landing Page', icon: '📄', color: 'color-landing', x: 350, y: 150, conversionRate: 40, pageViewRate: 95 },
+                    { id: 3, type: 'vsl', name: 'VSL', icon: '🎥', color: 'color-vsl', x: 600, y: 150, conversionRate: 60, pageViewRate: 85 },
+                    { id: 4, type: 'vendas', name: 'Checkout', icon: '💳', color: 'color-vendas', x: 850, y: 150, conversionRate: 3, pageViewRate: 95, generatesRevenue: true, price: 497 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100 },
+                    { id: 'c2', from: 2, to: 3, conversion: 100 },
+                    { id: 'c3', from: 3, to: 4, conversion: 100 }
+                ]
+            },
+            {
+                id: 'webinar',
+                name: 'Webinar',
+                icon: '🎓',
+                description: 'Captura → Email → Webinar → Oferta',
+                elements: [
+                    { id: 1, type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego', x: 100, y: 150, trafficMode: 'absolute', investment: 4000, impressions: 160000, clicks: 4000 },
+                    { id: 2, type: 'landing', name: 'Inscrição', icon: '📄', color: 'color-landing', x: 350, y: 150, conversionRate: 35, pageViewRate: 95 },
+                    { id: 3, type: 'email', name: 'Email Confirmação', icon: '✉️', color: 'color-email', x: 600, y: 150, conversionRate: 100, pageViewRate: 55 },
+                    { id: 4, type: 'webinar', name: 'Webinar', icon: '🎓', color: 'color-webinar', x: 850, y: 150, conversionRate: 40, pageViewRate: 40 },
+                    { id: 5, type: 'vendas', name: 'Oferta', icon: '💳', color: 'color-vendas', x: 1100, y: 150, conversionRate: 15, pageViewRate: 100, generatesRevenue: true, price: 997 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100 },
+                    { id: 'c2', from: 2, to: 3, conversion: 100 },
+                    { id: 'c3', from: 3, to: 4, conversion: 100 },
+                    { id: 'c4', from: 4, to: 5, conversion: 100 }
+                ]
+            },
+            {
+                id: 'tripwire',
+                name: 'Tripwire',
+                icon: '🎁',
+                description: 'Landing → Oferta Baixa → Upsells',
+                elements: [
+                    { id: 1, type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego', x: 100, y: 150, trafficMode: 'absolute', investment: 1500, impressions: 75000, clicks: 3000 },
+                    { id: 2, type: 'landing', name: 'Landing Page', icon: '📄', color: 'color-landing', x: 350, y: 150, conversionRate: 40, pageViewRate: 95 },
+                    { id: 3, type: 'vendas', name: 'Tripwire R$ 27', icon: '🎁', color: 'color-vendas', x: 600, y: 150, conversionRate: 20, pageViewRate: 100, generatesRevenue: true, price: 27 },
+                    { id: 4, type: 'upsell', name: 'Upsell R$ 97', icon: '⬆️', color: 'color-upsell', x: 850, y: 150, conversionRate: 30, pageViewRate: 100, generatesRevenue: true, price: 97 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100 },
+                    { id: 'c2', from: 2, to: 3, conversion: 100 },
+                    { id: 'c3', from: 3, to: 4, conversion: 100 }
+                ]
+            }
+        ];
+
+        function FunnelDashboard({ onSelectFunnel, onCreateBlank }) {
+            const [funnels, setFunnels] = React.useState([]);
+            const [showNewModal, setShowNewModal] = React.useState(false);
+            const [newName, setNewName] = React.useState('');
+
+            React.useEffect(() => {
+                const saved = JSON.parse(localStorage.getItem('funnels') || '[]');
+                setFunnels(saved);
+            }, []);
+
+            const createFromTemplate = (template) => {
+                const newFunnel = {
+                    id: Date.now().toString(),
+                    name: template.name,
+                    icon: template.icon,
+                    createdAt: new Date().toISOString(),
+                    elements: template.elements,
+                    connections: template.connections
+                };
+                const updated = [...funnels, newFunnel];
+                localStorage.setItem('funnels', JSON.stringify(updated));
+                setFunnels(updated);
+                onSelectFunnel(newFunnel.id);
+            };
+
+            const createBlank = () => {
+                if (!newName.trim()) {
+                    alert('Digite um nome para o funil');
+                    return;
+                }
+                const newFunnel = {
+                    id: Date.now().toString(),
+                    name: newName,
+                    icon: '🎯',
+                    createdAt: new Date().toISOString(),
+                    elements: [],
+                    connections: []
+                };
+                const updated = [...funnels, newFunnel];
+                localStorage.setItem('funnels', JSON.stringify(updated));
+                setFunnels(updated);
+                setShowNewModal(false);
+                setNewName('');
+                onSelectFunnel(newFunnel.id);
+            };
+
+            const deleteFunnel = (id, e) => {
+                e.stopPropagation();
+                if (confirm('Deletar este funil?')) {
+                    const updated = funnels.filter(f => f.id !== id);
+                    localStorage.setItem('funnels', JSON.stringify(updated));
+                    setFunnels(updated);
+                }
+            };
+
+            return (
+                <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px' }}>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                        <h1 style={{ color: 'white', fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>🚀 Meus Funis</h1>
+                        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '18px', textAlign: 'center', marginBottom: '40px' }}>Escolha um template ou crie do zero</p>
+
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '16px', padding: '30px', marginBottom: '30px' }}>
+                            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>✨ Templates Prontos</h2>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                                {FUNNEL_TEMPLATES.map(t => (
+                                    <div key={t.id} onClick={() => createFromTemplate(t)} style={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '12px', padding: '24px', cursor: 'pointer', transition: 'all 0.3s' }}
+                                        onMouseOver={(e) => { e.currentTarget.style.borderColor = '#667eea'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+                                        onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                                        <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '12px' }}>{t.icon}</div>
+                                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>{t.name}</h3>
+                                        <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center' }}>{t.description}</p>
+                                    </div>
+                                ))}
+                                <div onClick={() => setShowNewModal(true)} style={{ backgroundColor: 'white', border: '2px dashed #667eea', borderRadius: '12px', padding: '24px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
+                                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>➕</div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#667eea' }}>Criar do Zero</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        {funnels.length > 0 && (
+                            <div style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '16px', padding: '30px' }}>
+                                <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>📊 Meus Funis</h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                                    {funnels.map(f => (
+                                        <div key={f.id} onClick={() => onSelectFunnel(f.id)} style={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '12px', padding: '20px', cursor: 'pointer', position: 'relative' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                                <span style={{ fontSize: '32px' }}>{f.icon}</span>
+                                                <h3 style={{ fontSize: '18px', fontWeight: 'bold', flex: 1 }}>{f.name}</h3>
+                                                <button onClick={(e) => deleteFunnel(f.id, e)} style={{ padding: '8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🗑️</button>
+                                            </div>
+                                            <p style={{ fontSize: '12px', color: '#9ca3af' }}>{f.elements?.length || 0} elementos</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {showNewModal && (
+                            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setShowNewModal(false)}>
+                                <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', maxWidth: '500px', width: '90%' }}>
+                                    <h2 style={{ fontSize: '24px', marginBottom: '20px' }}>Criar Novo Funil</h2>
+                                    <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do funil..."
+                                        onKeyPress={(e) => { if (e.key === 'Enter') createBlank(); }}
+                                        style={{ width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #e5e7eb', borderRadius: '8px', marginBottom: '20px', boxSizing: 'border-box' }} autoFocus />
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <button onClick={() => setShowNewModal(false)} style={{ flex: 1, padding: '12px', backgroundColor: '#e5e7eb', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Cancelar</button>
+                                        <button onClick={createBlank} style={{ flex: 1, padding: '12px', backgroundColor: '#667eea', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Criar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
         function App() {
-            // Login desativado - vai direto para o app
-            return <FunnelBuilder />;
+            const [view, setView] = React.useState('dashboard');
+            const [funnelId, setFunnelId] = React.useState(null);
+
+            const selectFunnel = (id) => {
+                setFunnelId(id);
+                setView('editor');
+            };
+
+            const backToDashboard = () => {
+                setView('dashboard');
+                setFunnelId(null);
+            };
+
+            if (view === 'dashboard') {
+                return <FunnelDashboard onSelectFunnel={selectFunnel} />;
+            }
+
+            return <FunnelBuilder funnelId={funnelId} onBack={backToDashboard} />;
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));
