@@ -203,6 +203,8 @@ HTML_CONTENT = """<!DOCTYPE html>
         .canvas {
             width: 100%;
             height: 100%;
+            min-width: 3000px;
+            min-height: 3000px;
             position: relative;
             transform-origin: 0 0;
             transition: transform 0.2s ease-out;
@@ -775,6 +777,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         .color-checkout { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
         .color-obrigado { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
         .color-squeeze { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
+        .color-ecommerce { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .color-email { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         .color-sequencia { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
         .color-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); }
@@ -1226,7 +1229,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                     { type: 'vendas', name: 'Página de Vendas', icon: '💎', color: 'color-vendas' },
                     { type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout' },
                     { type: 'obrigado', name: 'Página Obrigado', icon: '🎉', color: 'color-obrigado' },
-                    { type: 'squeeze', name: 'Squeeze Page', icon: '🎁', color: 'color-squeeze' }
+                    { type: 'squeeze', name: 'Squeeze Page', icon: '🎁', color: 'color-squeeze' },
+                    { type: 'ecommerce', name: 'E-commerce', icon: '🛒', color: 'color-ecommerce' }
                 ]
             },
             {
@@ -1284,6 +1288,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             'checkout': 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
             'obrigado': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
             'squeeze': 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+            'ecommerce': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
 
             // Relacionamento - Azul/Roxo
             'email': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
@@ -1441,7 +1446,11 @@ HTML_CONTENT = """<!DOCTYPE html>
             const calculateMetrics = () => {
                 const elementMap = {};
                 elements.forEach(el => {
-                    elementMap[el.id] = { ...el, childConnections: [] };
+                    elementMap[el.id] = {
+                        ...el,
+                        childConnections: [],
+                        incomingTraffic: [] // Array para acumular tráfego de múltiplas fontes
+                    };
                 });
 
                 // Mapeia conexões com suas taxas de conversão
@@ -1455,6 +1464,16 @@ HTML_CONTENT = """<!DOCTYPE html>
                     const element = elementMap[id];
                     if (!element) return null;
 
+                    // Se recebe tráfego de entrada, acumula no array
+                    if (inputTraffic !== null) {
+                        element.incomingTraffic.push({
+                            traffic: inputTraffic,
+                            investment: parentInvestment
+                        });
+                        // Não calcula ainda, apenas acumula
+                        return;
+                    }
+
                     let visits = 0;  // Pessoas que chegaram
                     let pageViews = 0;  // Pessoas que visualizaram a página
                     let leads = 0;  // Pessoas convertidas
@@ -1464,7 +1483,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     let costPerLead = 0;
 
                     // Se é elemento raiz (sem inputTraffic), calcula a partir de impressões/cliques
-                    if (inputTraffic === null) {
+                    if (element.type === 'trafego' || element.type === 'retargeting') {
                         investment = element.investment || 0;
                         const impressions = element.impressions || 0;
                         const clicks = element.clicks || 0;
@@ -1481,10 +1500,10 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                         // Calcula Custo por Lead/Clique
                         costPerLead = clicks > 0 ? investment / clicks : 0;
-                    } else {
-                        // Se recebe tráfego de um elemento pai
-                        visits = inputTraffic;
-                        investment = parentInvestment;
+                    } else if (element.incomingTraffic.length > 0) {
+                        // Se recebe tráfego de múltiplas fontes, soma tudo
+                        visits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
+                        investment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
 
                         // Aplica taxa de visualização de página
                         const pageViewRate = element.pageViewRate || 100;
@@ -1550,13 +1569,160 @@ HTML_CONTENT = """<!DOCTYPE html>
                     });
                 };
 
-                // Começa pelos elementos raiz (sem pais)
+                // FASE 1: Propaga o tráfego dos elementos raiz
                 elements.forEach(el => {
                     const hasParent = connections.some(conn => conn.to === el.id);
                     if (!hasParent) {
                         calculateForElement(el.id);
                     }
                 });
+
+                // FASE 2: Calcula métricas para todos os elementos que receberam tráfego
+                Object.values(elementMap).forEach(element => {
+                    if (element.incomingTraffic.length > 0 && !element.calculatedMetrics) {
+                        // Soma todo o tráfego recebido
+                        const totalVisits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
+                        const totalInvestment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
+
+                        // Aplica taxa de visualização de página
+                        const pageViewRate = element.pageViewRate || 100;
+                        const pageViews = Math.round(totalVisits * (pageViewRate / 100));
+
+                        // Aplica taxa de conversão do elemento
+                        const conversionRate = element.conversionRate || 0;
+                        const leads = Math.round(pageViews * (conversionRate / 100));
+
+                        const price = element.price || 0;
+
+                        // Só gera receita se o elemento tiver a flag generatesRevenue ativada
+                        let revenue = element.generatesRevenue ? (leads * price) : 0;
+
+                        // Adiciona receita do Order Bump se estiver habilitado
+                        let orderBumpRevenue = 0;
+                        let orderBumpSales = 0;
+                        if (element.hasOrderBump && element.generatesRevenue) {
+                            const orderBumpPrice = element.orderBumpPrice || 0;
+                            const orderBumpConversion = element.orderBumpConversion || 0;
+                            orderBumpSales = Math.round(leads * (orderBumpConversion / 100));
+                            orderBumpRevenue = orderBumpSales * orderBumpPrice;
+                            revenue += orderBumpRevenue;
+                        }
+
+                        element.calculatedMetrics = {
+                            visits: totalVisits,
+                            pageViews,
+                            leads,
+                            revenue,
+                            profit: revenue,
+                            cost: 0,
+                            investment: totalInvestment,
+                            cpm: 0,
+                            ctr: 0,
+                            costPerLead: 0,
+                            orderBumpSales,
+                            orderBumpRevenue
+                        };
+
+                        // Propaga para elementos filhos
+                        element.childConnections.forEach(conn => {
+                            const childElement = elementMap[conn.to];
+                            const conversionRate = conn.conversion || 0;
+                            let childTraffic = 0;
+
+                            // Se o elemento filho é um Downsell, envia os NÃO convertidos
+                            if (childElement && childElement.type === 'downsell') {
+                                const nonConverted = pageViews - leads;
+                                childTraffic = Math.round(nonConverted * (conversionRate / 100));
+                            } else {
+                                childTraffic = Math.round(leads * (conversionRate / 100));
+                            }
+
+                            if (childTraffic > 0) {
+                                if (!childElement.incomingTraffic) {
+                                    childElement.incomingTraffic = [];
+                                }
+                                childElement.incomingTraffic.push({
+                                    traffic: childTraffic,
+                                    investment: totalInvestment
+                                });
+                            }
+                        });
+                    }
+                });
+
+                // FASE 3: Processa elementos que ainda não foram calculados (podem ter recebido tráfego na fase 2)
+                let maxIterations = 10; // Previne loop infinito
+                let hasUncalculated = true;
+
+                while (hasUncalculated && maxIterations > 0) {
+                    hasUncalculated = false;
+                    maxIterations--;
+
+                    Object.values(elementMap).forEach(element => {
+                        if (element.incomingTraffic.length > 0 && !element.calculatedMetrics) {
+                            hasUncalculated = true;
+
+                            // Copia a lógica de cálculo
+                            const totalVisits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
+                            const totalInvestment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
+                            const pageViewRate = element.pageViewRate || 100;
+                            const pageViews = Math.round(totalVisits * (pageViewRate / 100));
+                            const conversionRate = element.conversionRate || 0;
+                            const leads = Math.round(pageViews * (conversionRate / 100));
+                            const price = element.price || 0;
+                            let revenue = element.generatesRevenue ? (leads * price) : 0;
+                            let orderBumpRevenue = 0;
+                            let orderBumpSales = 0;
+
+                            if (element.hasOrderBump && element.generatesRevenue) {
+                                const orderBumpPrice = element.orderBumpPrice || 0;
+                                const orderBumpConversion = element.orderBumpConversion || 0;
+                                orderBumpSales = Math.round(leads * (orderBumpConversion / 100));
+                                orderBumpRevenue = orderBumpSales * orderBumpPrice;
+                                revenue += orderBumpRevenue;
+                            }
+
+                            element.calculatedMetrics = {
+                                visits: totalVisits,
+                                pageViews,
+                                leads,
+                                revenue,
+                                profit: revenue,
+                                cost: 0,
+                                investment: totalInvestment,
+                                cpm: 0,
+                                ctr: 0,
+                                costPerLead: 0,
+                                orderBumpSales,
+                                orderBumpRevenue
+                            };
+
+                            // Propaga para elementos filhos
+                            element.childConnections.forEach(conn => {
+                                const childElement = elementMap[conn.to];
+                                const childConversionRate = conn.conversion || 0;
+                                let childTraffic = 0;
+
+                                if (childElement && childElement.type === 'downsell') {
+                                    const nonConverted = pageViews - leads;
+                                    childTraffic = Math.round(nonConverted * (childConversionRate / 100));
+                                } else {
+                                    childTraffic = Math.round(leads * (childConversionRate / 100));
+                                }
+
+                                if (childTraffic > 0) {
+                                    if (!childElement.incomingTraffic) {
+                                        childElement.incomingTraffic = [];
+                                    }
+                                    childElement.incomingTraffic.push({
+                                        traffic: childTraffic,
+                                        investment: totalInvestment
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
 
                 return elementMap;
             };
@@ -1583,6 +1749,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                         // Soma investimento apenas dos elementos raiz
                         if (el.calculatedMetrics.cost > 0) {
                             totalInvestment += el.calculatedMetrics.cost;
+                        }
+
+                        // Soma investimento de retargeting
+                        if (el.type === 'retargeting' && el.retargetingInvestment > 0) {
+                            totalInvestment += el.retargetingInvestment;
                         }
 
                         // Conta visitantes dos elementos de tráfego
@@ -1700,7 +1871,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                     setElements(elements.map(el =>
                         el.id === draggingElement
-                            ? { ...el, x: Math.max(0, x), y: Math.max(0, y) }
+                            ? { ...el, x: x, y: y }
                             : el
                     ));
                 }
@@ -1877,8 +2048,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                     name: elementType.name,
                     icon: elementType.icon,
                     color: elementType.color,
-                    x: Math.max(0, elementMenuPosition.x / zoomLevel - 110),
-                    y: Math.max(0, elementMenuPosition.y / zoomLevel - 60),
+                    x: elementMenuPosition.x / zoomLevel - 110,
+                    y: elementMenuPosition.y / zoomLevel - 60,
                     investment: 0,
                     impressions: 0,
                     clicks: 0,
@@ -1959,7 +2130,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     if (el.id === selectedElement) {
                         console.log('Atualizando elemento:', el.id, property, value);
                         // Se for um campo numérico
-                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'orderBumpPrice', 'orderBumpConversion'].includes(property)) {
+                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'orderBumpPrice', 'orderBumpConversion', 'addToCartRate', 'retargetingInvestment'].includes(property)) {
                             // Se o valor estiver vazio, permite vazio (não força 0)
                             if (value === '' || value === null || value === undefined) {
                                 return { ...el, [property]: 0 };
@@ -1967,12 +2138,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                             const numValue = parseFloat(value);
                             const updated = { ...el, [property]: numValue };
 
-                            // Cálculos automáticos para modo de tráfego
-                            if (el.type === 'trafego') {
+                            // Cálculos automáticos para modo de tráfego (trafego e retargeting)
+                            if (el.type === 'trafego' || el.type === 'retargeting') {
+                                // Para retargeting, usa investment ou retargetingInvestment
+                                const inv = el.type === 'retargeting' ? (updated.investment || updated.retargetingInvestment) : updated.investment;
+
                                 if (el.trafficMode === 'metrics') {
                                     // Sempre recalcula impressões se temos CPM e investimento
-                                    if (updated.cpm > 0 && updated.investment > 0) {
-                                        updated.impressions = Math.round((updated.investment / updated.cpm) * 1000);
+                                    if (updated.cpm > 0 && inv > 0) {
+                                        updated.impressions = Math.round((inv / updated.cpm) * 1000);
                                     }
                                     // Sempre recalcula cliques se temos CTR e impressões
                                     if (updated.ctr > 0 && updated.impressions > 0) {
@@ -1984,8 +2158,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         updated.ctr = parseFloat(((updated.clicks / updated.impressions) * 100).toFixed(2));
                                     }
                                     // Calcula CPM automaticamente
-                                    if (updated.impressions > 0 && updated.investment >= 0) {
-                                        updated.cpm = parseFloat(((updated.investment / updated.impressions) * 1000).toFixed(2));
+                                    if (updated.impressions > 0 && inv >= 0) {
+                                        updated.cpm = parseFloat(((inv / updated.impressions) * 1000).toFixed(2));
                                     }
                                 }
                             }
@@ -1996,10 +2170,13 @@ HTML_CONTENT = """<!DOCTYPE html>
                         if (property === 'trafficMode') {
                             const updated = { ...el, [property]: value };
 
+                            // Para retargeting, usa investment ou retargetingInvestment
+                            const inv = el.type === 'retargeting' ? (updated.investment || updated.retargetingInvestment) : updated.investment;
+
                             if (value === 'metrics') {
                                 // Recalcula com base nas métricas
-                                if (updated.cpm > 0 && updated.investment > 0) {
-                                    updated.impressions = Math.round((updated.investment / updated.cpm) * 1000);
+                                if (updated.cpm > 0 && inv > 0) {
+                                    updated.impressions = Math.round((inv / updated.cpm) * 1000);
                                 }
                                 if (updated.ctr > 0 && updated.impressions > 0) {
                                     updated.clicks = Math.round((updated.impressions * updated.ctr) / 100);
@@ -2009,8 +2186,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 if (updated.impressions > 0 && updated.clicks >= 0) {
                                     updated.ctr = parseFloat(((updated.clicks / updated.impressions) * 100).toFixed(2));
                                 }
-                                if (updated.impressions > 0 && updated.investment >= 0) {
-                                    updated.cpm = parseFloat(((updated.investment / updated.impressions) * 1000).toFixed(2));
+                                if (updated.impressions > 0 && inv >= 0) {
+                                    updated.cpm = parseFloat(((inv / updated.impressions) * 1000).toFixed(2));
                                 }
                             }
 
@@ -2345,6 +2522,24 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                             </div>
                                                         </div>
                                                     </>
+                                                ) : element.type === 'retargeting' && element.clicks > 0 ? (
+                                                    // Métricas para Retargeting como fonte de tráfego
+                                                    <>
+                                                        <div className="metric-row">
+                                                            <span>👁️ {(element.impressions || 0).toLocaleString('pt-BR')} impressões</span>
+                                                        </div>
+                                                        <div className="metric-row">
+                                                            <span>👆 {(element.clicks || 0).toLocaleString('pt-BR')} cliques ({element.impressions > 0 ? ((element.clicks / element.impressions) * 100).toFixed(1) : 0}%)</span>
+                                                        </div>
+                                                        <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
+                                                            <div className="metric-row">
+                                                                <span>💰 R$ {((element.investment || element.retargetingInvestment) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                            <div className="metric-row">
+                                                                <span>💵 R$ {(metrics.costPerLead || 0).toFixed(2)}/clique</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
                                                 ) : element.type === 'landing' ? (
                                                     // Métricas para Landing Page
                                                     <>
@@ -2369,6 +2564,13 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         <div className="metric-row">
                                                             <span>{metrics.revenue > 0 ? '🛒' : '✅'} {metrics.leads?.toLocaleString('pt-BR') || 0} {metrics.revenue > 0 ? 'vendas' : 'conversões'} ({element.conversionRate || 0}%)</span>
                                                         </div>
+                                                        {element.type === 'retargeting' && element.retargetingInvestment > 0 && (
+                                                            <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
+                                                                <div className="metric-row">
+                                                                    <span>💰 R$ {(element.retargetingInvestment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} investido</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                         {metrics.revenue > 0 && (
                                                             <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
                                                                 <div className="metric-row">
@@ -2723,6 +2925,29 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 )}
                                             </div>
+                                            {/* Campo específico para E-commerce: Taxa de Add to Cart */}
+                                            {selectedElementData.type === 'ecommerce' && (
+                                                <div className="form-group">
+                                                    <label className="form-label">🛒 Taxa de Adicionar ao Carrinho (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        className={`form-input ${validateValue('addToCartRate', selectedElementData.addToCartRate).type || ''}`}
+                                                        value={selectedElementData.addToCartRate === 0 ? '' : selectedElementData.addToCartRate || ''}
+                                                        onChange={(e) => updateElementProperty('addToCartRate', e.target.value)}
+                                                        min="0"
+                                                        max="100"
+                                                        step="0.1"
+                                                        placeholder="Ex: 20"
+                                                    />
+                                                    <small className="form-help">% de visitantes que adicionam produto ao carrinho</small>
+                                                    {validateValue('addToCartRate', selectedElementData.addToCartRate).message && (
+                                                        <div className={`validation-message ${validateValue('addToCartRate', selectedElementData.addToCartRate).type}`}>
+                                                            {validateValue('addToCartRate', selectedElementData.addToCartRate).message}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             <div className="form-group">
                                                 <div className="form-checkbox">
                                                     <input
@@ -2923,6 +3148,20 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 </div>
                                             )}
+                                            {selectedElementData.type === 'ecommerce' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - E-COMMERCE</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 15-25%: Taxa de Add to Cart</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 2-5%: Conversão em vendas</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 50-70%: Abandono de carrinho típico</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {selectedElementData.type === 'whatsapp' && (
                                                 <div className="benchmark-box">
                                                     <h4>📋 BENCHMARKS - WHATSAPP</h4>
@@ -3035,19 +3274,149 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 </div>
                                             )}
+                                            {/* Campos específicos para RETARGETING */}
                                             {selectedElementData.type === 'retargeting' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - RETARGETING</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 2-5%: CTR típico de anúncios</span>
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">📝 Nome do Público</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-input"
+                                                            value={selectedElementData.audienceName || ''}
+                                                            onChange={(e) => updateElementProperty('audienceName', e.target.value)}
+                                                            placeholder="Ex: Visualizou VSL mas não comprou"
+                                                        />
+                                                        <small className="form-help">Identifique qual público será impactado neste retargeting</small>
                                                     </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 10-30%: Conversão de retargeting</span>
+
+                                                    <div className="traffic-mode-toggle">
+                                                        <div
+                                                            className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
+                                                            onClick={() => updateElementProperty('trafficMode', 'absolute')}
+                                                        >
+                                                            📊 Números Absolutos
+                                                        </div>
+                                                        <div
+                                                            className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
+                                                            onClick={() => updateElementProperty('trafficMode', 'metrics')}
+                                                        >
+                                                            📈 CTR & CPM
+                                                        </div>
                                                     </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• CPC 50-70% menor que cold traffic</span>
+
+                                                    <div className="form-group">
+                                                        <label className="form-label">💰 Investimento em Retargeting (R$)</label>
+                                                        <input
+                                                            type="number"
+                                                            className={`form-input ${validateValue('investment', selectedElementData.investment || selectedElementData.retargetingInvestment).type || ''}`}
+                                                            value={selectedElementData.investment || selectedElementData.retargetingInvestment || ''}
+                                                            onChange={(e) => {
+                                                                updateElementProperty('investment', e.target.value);
+                                                                updateElementProperty('retargetingInvestment', e.target.value);
+                                                            }}
+                                                            placeholder="Ex: 2000"
+                                                            step="0.01"
+                                                        />
+                                                        <small className="form-help">Investimento adicional em campanhas de retargeting</small>
+                                                        {validateValue('investment', selectedElementData.investment || selectedElementData.retargetingInvestment).message && (
+                                                            <div className={`validation-message ${validateValue('investment', selectedElementData.investment || selectedElementData.retargetingInvestment).type}`}>
+                                                                {validateValue('investment', selectedElementData.investment || selectedElementData.retargetingInvestment).message}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
+
+                                                    {selectedElementData.trafficMode === 'absolute' ? (
+                                                        <>
+                                                            <div className="form-group">
+                                                                <label className="form-label">👁️ Impressões Esperadas</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-input ${validateValue('impressions', selectedElementData.impressions).type || ''}`}
+                                                                    value={selectedElementData.impressions === 0 ? '' : selectedElementData.impressions}
+                                                                    onChange={(e) => updateElementProperty('impressions', e.target.value)}
+                                                                    placeholder="Ex: 50000"
+                                                                />
+                                                                <small className="form-help">Quantas pessoas do público verão o anúncio de retargeting?</small>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <label className="form-label">👆 Cliques Esperados</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className={`form-input ${validateValue('clicks', selectedElementData.clicks).type || ''}`}
+                                                                    value={selectedElementData.clicks === 0 ? '' : selectedElementData.clicks}
+                                                                    onChange={(e) => updateElementProperty('clicks', e.target.value)}
+                                                                    placeholder="Ex: 2000"
+                                                                />
+                                                                <small className="form-help">Quantas pessoas clicarão? (CTR calculado: {selectedElementData.ctr}%)</small>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="form-group">
+                                                                <label className="form-label">💵 CPM - Custo por Mil (R$)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-input"
+                                                                    value={selectedElementData.cpm === 0 ? '' : selectedElementData.cpm}
+                                                                    onChange={(e) => updateElementProperty('cpm', e.target.value)}
+                                                                    placeholder="Ex: 15"
+                                                                    step="0.01"
+                                                                />
+                                                                <small className="form-help">Quanto custa 1000 impressões? (Impressões calculadas: {selectedElementData.impressions.toLocaleString('pt-BR')})</small>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <label className="form-label">📊 CTR - Taxa de Cliques (%)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-input"
+                                                                    value={selectedElementData.ctr === 0 ? '' : selectedElementData.ctr}
+                                                                    onChange={(e) => updateElementProperty('ctr', e.target.value)}
+                                                                    placeholder="Ex: 4"
+                                                                    step="0.01"
+                                                                />
+                                                                <small className="form-help">% de pessoas que clicam no anúncio (Cliques calculados: {selectedElementData.clicks.toLocaleString('pt-BR')})</small>
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    {selectedElementData.clicks > 0 && (
+                                                        <div className="benchmark-box" style={{background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white', border: 'none'}}>
+                                                            <h4 style={{color: 'white'}}>👥 TRÁFEGO PARA PRÓXIMA ETAPA</h4>
+                                                            <div className="benchmark-item" style={{fontSize: '16px', fontWeight: 'bold'}}>
+                                                                <span>• {selectedElementData.clicks.toLocaleString('pt-BR')} pessoas chegarão na próxima página</span>
+                                                            </div>
+                                                            {selectedElementData.impressions > 0 && (
+                                                                <>
+                                                                    <div className="benchmark-item">
+                                                                        <span>• CTR: {selectedElementData.ctr > 0 ? selectedElementData.ctr : ((selectedElementData.clicks / selectedElementData.impressions) * 100).toFixed(2)}%</span>
+                                                                    </div>
+                                                                    <div className="benchmark-item">
+                                                                        <span>• CPM: R$ {selectedElementData.cpm > 0 ? selectedElementData.cpm.toFixed(2) : (((selectedElementData.investment || selectedElementData.retargetingInvestment) / selectedElementData.impressions) * 1000).toFixed(2)}</span>
+                                                                    </div>
+                                                                    <div className="benchmark-item">
+                                                                        <span>• CPC: R$ {((selectedElementData.investment || selectedElementData.retargetingInvestment) / selectedElementData.clicks).toFixed(2)}</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="benchmark-box">
+                                                        <h4>📋 BENCHMARKS - RETARGETING</h4>
+                                                        <div className="benchmark-item">
+                                                            <span>• 3-8%: CTR típico (melhor que cold traffic)</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• CPM 30-50% menor que tráfego frio</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• 10-30%: Conversão de retargeting</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• CPC 50-70% menor que cold traffic</span>
+                                                        </div>
+                                                    </div>
+                                                </>
                                             )}
                                         </>
                                     )}
