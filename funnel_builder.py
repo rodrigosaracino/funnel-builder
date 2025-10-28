@@ -1464,8 +1464,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                     const element = elementMap[id];
                     if (!element) return null;
 
-                    // Se recebe tráfego de entrada, acumula no array
-                    if (inputTraffic !== null) {
+                    // Retargeting com métricas próprias ignora tráfego de entrada (funciona como fonte independente)
+                    const isRetargetingWithMetrics = element.type === 'retargeting' && element.clicks > 0;
+
+                    // Se recebe tráfego de entrada E não é retargeting com métricas, acumula no array
+                    if (inputTraffic !== null && !isRetargetingWithMetrics) {
                         element.incomingTraffic.push({
                             traffic: inputTraffic,
                             investment: parentInvestment
@@ -1483,8 +1486,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                     let costPerLead = 0;
 
                     // Se é elemento raiz (sem inputTraffic), calcula a partir de impressões/cliques
-                    if (element.type === 'trafego' || element.type === 'retargeting') {
-                        investment = element.investment || 0;
+                    if ((element.type === 'trafego' || element.type === 'retargeting') && element.clicks > 0) {
+                        // Para retargeting, usa investment ou retargetingInvestment
+                        investment = element.type === 'retargeting'
+                            ? (element.investment || element.retargetingInvestment || 0)
+                            : (element.investment || 0);
+
                         const impressions = element.impressions || 0;
                         const clicks = element.clicks || 0;
 
@@ -1572,7 +1579,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                 // FASE 1: Propaga o tráfego dos elementos raiz
                 elements.forEach(el => {
                     const hasParent = connections.some(conn => conn.to === el.id);
-                    if (!hasParent) {
+                    // Retargeting com métricas próprias (clicks > 0) funciona como raiz, mesmo com conexões de entrada
+                    const isRetargetingWithMetrics = el.type === 'retargeting' && el.clicks > 0;
+
+                    if (!hasParent || isRetargetingWithMetrics) {
                         calculateForElement(el.id);
                     }
                 });
