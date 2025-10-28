@@ -2564,7 +2564,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         <div className="metric-row">
                                                             <span>{metrics.revenue > 0 ? '🛒' : '✅'} {metrics.leads?.toLocaleString('pt-BR') || 0} {metrics.revenue > 0 ? 'vendas' : 'conversões'} ({element.conversionRate || 0}%)</span>
                                                         </div>
-                                                        {element.type === 'retargeting' && element.retargetingInvestment > 0 && (
+                                                        {/* Retargeting sem métricas de tráfego mostra apenas investimento se configurado */}
+                                                        {element.type === 'retargeting' && element.clicks === 0 && element.retargetingInvestment > 0 && (
                                                             <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
                                                                 <div className="metric-row">
                                                                     <span>💰 R$ {(element.retargetingInvestment || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} investido</span>
@@ -2906,25 +2907,28 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 />
                                                 <small className="form-help">Descreva este elemento do funil</small>
                                             </div>
-                                            <div className="form-group">
-                                                <label className="form-label">✅ Taxa de Conversão (%)</label>
-                                                <input
-                                                    type="number"
-                                                    className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
-                                                    value={selectedElementData.conversionRate === 0 ? '' : selectedElementData.conversionRate}
-                                                    onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    placeholder="Ex: 10"
-                                                />
-                                                <small className="form-help">% de pessoas que completarão a ação desejada</small>
-                                                {validateValue('conversionRate', selectedElementData.conversionRate).message && (
-                                                    <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
-                                                        {validateValue('conversionRate', selectedElementData.conversionRate).message}
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {/* Taxa de conversão não é necessária para Retargeting com métricas de tráfego */}
+                                            {!(selectedElementData.type === 'retargeting' && selectedElementData.clicks > 0) && (
+                                                <div className="form-group">
+                                                    <label className="form-label">✅ Taxa de Conversão (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
+                                                        value={selectedElementData.conversionRate === 0 ? '' : selectedElementData.conversionRate}
+                                                        onChange={(e) => updateElementProperty('conversionRate', e.target.value)}
+                                                        min="0"
+                                                        max="100"
+                                                        step="0.1"
+                                                        placeholder="Ex: 10"
+                                                    />
+                                                    <small className="form-help">% de pessoas que completarão a ação desejada</small>
+                                                    {validateValue('conversionRate', selectedElementData.conversionRate).message && (
+                                                        <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
+                                                            {validateValue('conversionRate', selectedElementData.conversionRate).message}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                             {/* Campo específico para E-commerce: Taxa de Add to Cart */}
                                             {selectedElementData.type === 'ecommerce' && (
                                                 <div className="form-group">
