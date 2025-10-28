@@ -456,10 +456,10 @@ HTML_CONTENT = """<!DOCTYPE html>
             transition: all 0.2s;
         }
 
-        .connection-point.left {
-            left: -8px;
-            top: 50%;
-            transform: translateY(-50%);
+        .connection-point.top {
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
         }
 
         .connection-point.right {
@@ -468,9 +468,21 @@ HTML_CONTENT = """<!DOCTYPE html>
             transform: translateY(-50%);
         }
 
-        .connection-point.left:hover {
+        .connection-point.bottom {
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .connection-point.left {
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .connection-point.top:hover {
             background: #4299e1;
-            transform: translateY(-50%) scale(1.4);
+            transform: translateX(-50%) scale(1.4);
             box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
         }
 
@@ -480,15 +492,40 @@ HTML_CONTENT = """<!DOCTYPE html>
             box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
         }
 
-        .connection-point.connecting {
-            background: #f56565;
-            border-color: #f56565;
-            animation: pulse 0.8s infinite;
+        .connection-point.bottom:hover {
+            background: #4299e1;
+            transform: translateX(-50%) scale(1.4);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
         }
 
-        @keyframes pulse {
+        .connection-point.left:hover {
+            background: #4299e1;
+            transform: translateY(-50%) scale(1.4);
+            box-shadow: 0 0 10px rgba(66, 153, 225, 0.5);
+        }
+
+        .connection-point.connecting.top,
+        .connection-point.connecting.bottom {
+            background: #f56565;
+            border-color: #f56565;
+            animation: pulseHorizontal 0.8s infinite;
+        }
+
+        .connection-point.connecting.left,
+        .connection-point.connecting.right {
+            background: #f56565;
+            border-color: #f56565;
+            animation: pulseVertical 0.8s infinite;
+        }
+
+        @keyframes pulseVertical {
             0%, 100% { transform: translateY(-50%) scale(1); }
             50% { transform: translateY(-50%) scale(1.3); }
+        }
+
+        @keyframes pulseHorizontal {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.3); }
         }
 
         svg.connections {
@@ -863,6 +900,293 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-size: 13px;
             color: #718096;
         }
+
+        /* Settings Panel Styles */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .settings-panel {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-header h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .settings-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .settings-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .settings-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .settings-section {
+            margin-bottom: 40px;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .settings-section-icon {
+            font-size: 28px;
+        }
+
+        .settings-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .settings-card {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .settings-card:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .settings-card-icon {
+            font-size: 24px;
+        }
+
+        .settings-card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .settings-input-group {
+            margin-bottom: 16px;
+        }
+
+        .settings-input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .settings-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .settings-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .settings-footer {
+            padding: 20px 30px;
+            border-top: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f7fafc;
+        }
+
+        .settings-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .settings-btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .settings-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .settings-btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .settings-btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .settings-icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .settings-icon-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .category-editor {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .category-editor-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .color-palette-item {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .color-palette-item:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-palette-item.selected {
+            border-color: #2d3748;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #2d3748;
+        }
+
+        .color-picker-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .color-picker-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -871,7 +1195,19 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
 
-        const ELEMENT_CATEGORIES = [
+        // Função para carregar configurações do sistema
+        const loadSystemConfig = () => {
+            const saved = localStorage.getItem('systemConfig');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            return null;
+        };
+
+        // Carrega configurações ou usa padrão
+        const systemConfig = loadSystemConfig();
+
+        const ELEMENT_CATEGORIES_DEFAULT = [
             {
                 name: 'Tráfego',
                 icon: '🎯',
@@ -930,7 +1266,72 @@ HTML_CONTENT = """<!DOCTYPE html>
             }
         ];
 
+        // Usa configurações personalizadas se existirem, senão usa padrão
+        const ELEMENT_CATEGORIES = systemConfig?.categories || ELEMENT_CATEGORIES_DEFAULT;
         const ELEMENT_TYPES = ELEMENT_CATEGORIES.flatMap(cat => cat.elements);
+
+        // Mapeamento de cores padrão para cada tipo de elemento
+        const DEFAULT_COLORS = {
+            // Tráfego - Roxo/Gradiente
+            'trafego': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'retargeting': 'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',
+
+            // Páginas - Tons variados
+            'landing': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'captura': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'vsl': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'vendas': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'checkout': 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+            'obrigado': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+            'squeeze': 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+
+            // Relacionamento - Azul/Roxo
+            'email': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'sequencia': 'linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%)',
+            'whatsapp': 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+
+            // Engajamento - Laranja/Amarelo
+            'quiz': 'linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)',
+            'video': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'webinar': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'call': 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',
+
+            // Conversão - Verde/Amarelo
+            'countdown': 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+            'upsell': 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'downsell': 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)',
+
+            // Pós-Venda - Roxo escuro
+            'membros': 'linear-gradient(135deg, #8e44ad 0%, #c0392b 100%)'
+        };
+
+        // Verifica se o texto é claro ou escuro para contraste
+        const needsDarkText = (color) => {
+            const lightBackgrounds = ['captura', 'obrigado', 'squeeze', 'upsell', 'downsell'];
+            return lightBackgrounds.includes(color);
+        };
+
+        // Paleta de cores predefinidas para seleção rápida
+        const COLOR_PALETTE = [
+            { name: 'Roxo Imperial', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+            { name: 'Laranja Quente', gradient: 'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)' },
+            { name: 'Rosa Vibrante', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+            { name: 'Ciano Suave', gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' },
+            { name: 'Verde Menta', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' },
+            { name: 'Dourado Solar', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' },
+            { name: 'Azul Oceano', gradient: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
+            { name: 'Pêssego', gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' },
+            { name: 'Amarelo Brilhante', gradient: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)' },
+            { name: 'Azul Claro', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+            { name: 'Roxo Místico', gradient: 'linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%)' },
+            { name: 'Verde WhatsApp', gradient: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)' },
+            { name: 'Coral Tropical', gradient: 'linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)' },
+            { name: 'Azul Turquesa', gradient: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)' },
+            { name: 'Vermelho Intenso', gradient: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' },
+            { name: 'Roxo Escuro', gradient: 'linear-gradient(135deg, #8e44ad 0%, #c0392b 100%)' },
+            { name: 'Verde Esmeralda', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' },
+            { name: 'Azul Índigo', gradient: 'linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%)' }
+        ];
 
         function LoginScreen({ onLogin }) {
             const [email, setEmail] = useState('');
@@ -1028,9 +1429,13 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [isDraggingConnection, setIsDraggingConnection] = useState(false);
             const [dragConnectionStart, setDragConnectionStart] = useState(null);
             const [dragConnectionEnd, setDragConnectionEnd] = useState(null);
+            const [connectionFromSide, setConnectionFromSide] = useState(null);
             const [hoveredElement, setHoveredElement] = useState(null);
             const [showElementMenu, setShowElementMenu] = useState(false);
             const [elementMenuPosition, setElementMenuPosition] = useState({ x: 0, y: 0 });
+            const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+            const [isPanning, setIsPanning] = useState(false);
+            const [panStart, setPanStart] = useState({ x: 0, y: 0 });
             const canvasRef = useRef(null);
 
             const calculateMetrics = () => {
@@ -1093,7 +1498,18 @@ HTML_CONTENT = """<!DOCTYPE html>
                     const price = element.price || 0;
 
                     // Só gera receita se o elemento tiver a flag generatesRevenue ativada
-                    const revenue = element.generatesRevenue ? (leads * price) : 0;
+                    let revenue = element.generatesRevenue ? (leads * price) : 0;
+
+                    // Adiciona receita do Order Bump se estiver habilitado
+                    let orderBumpRevenue = 0;
+                    let orderBumpSales = 0;
+                    if (element.hasOrderBump && element.generatesRevenue) {
+                        const orderBumpPrice = element.orderBumpPrice || 0;
+                        const orderBumpConversion = element.orderBumpConversion || 0;
+                        orderBumpSales = Math.round(leads * (orderBumpConversion / 100));
+                        orderBumpRevenue = orderBumpSales * orderBumpPrice;
+                        revenue += orderBumpRevenue;
+                    }
 
                     // Custo total é o investimento inicial (apenas para elementos raiz)
                     const totalCost = inputTraffic === null ? investment : 0;
@@ -1109,7 +1525,9 @@ HTML_CONTENT = """<!DOCTYPE html>
                         investment,
                         cpm,
                         ctr,
-                        costPerLead
+                        costPerLead,
+                        orderBumpSales,
+                        orderBumpRevenue
                     };
 
                     // Propaga para elementos filhos usando a taxa de conversão da conexão
@@ -1148,6 +1566,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 let totalRevenue = 0;
                 let totalProfit = 0;
                 let totalSales = 0;
+                let totalActualSales = 0; // Vendas reais (apenas elementos que geram receita)
                 let totalInvestment = 0;
                 let totalVisitors = 0;
 
@@ -1155,6 +1574,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                     if (el.calculatedMetrics) {
                         totalRevenue += el.calculatedMetrics.revenue;
                         totalSales += el.calculatedMetrics.leads;
+
+                        // Conta vendas apenas de elementos que geram receita
+                        if (el.generatesRevenue && el.calculatedMetrics.leads > 0) {
+                            totalActualSales += el.calculatedMetrics.leads;
+                        }
 
                         // Soma investimento apenas dos elementos raiz
                         if (el.calculatedMetrics.cost > 0) {
@@ -1170,10 +1594,13 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 totalProfit = totalRevenue - totalInvestment;
                 const roi = totalInvestment > 0 ? ((totalProfit / totalInvestment) * 100) : 0;
+                // CAC baseado apenas em vendas reais (elementos que geram receita)
+                const cac = totalActualSales > 0 ? (totalInvestment / totalActualSales) : 0;
 
                 return {
                     revenue: totalRevenue,
                     profit: totalProfit,
+                    cac: cac,
                     roi: roi,
                     sales: totalSales,
                     investment: totalInvestment,
@@ -1237,6 +1664,18 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const handleMouseMove = (e) => {
+                // Pan do canvas
+                if (isPanning) {
+                    const deltaX = e.clientX - panStart.x;
+                    const deltaY = e.clientY - panStart.y;
+                    setPanOffset({
+                        x: panOffset.x + deltaX,
+                        y: panOffset.y + deltaY
+                    });
+                    setPanStart({ x: e.clientX, y: e.clientY });
+                    return;
+                }
+
                 // Arrasto de conexão
                 if (isDraggingConnection) {
                     handleConnectionDragMove(e);
@@ -1256,8 +1695,8 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 if (isDragging) {
                     const rect = canvasRef.current.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / zoomLevel - dragOffset.x;
-                    const y = (e.clientY - rect.top) / zoomLevel - dragOffset.y;
+                    const x = (e.clientX - rect.left - panOffset.x) / zoomLevel - dragOffset.x;
+                    const y = (e.clientY - rect.top - panOffset.y) / zoomLevel - dragOffset.y;
 
                     setElements(elements.map(el =>
                         el.id === draggingElement
@@ -1270,6 +1709,17 @@ HTML_CONTENT = """<!DOCTYPE html>
             const handleMouseUp = () => {
                 setDraggingElement(null);
                 setIsDragging(false);
+                setIsPanning(false);
+            };
+
+            const handleCanvasMouseDown = (e) => {
+                // Se clicar diretamente no canvas-container (fundo), inicia o pan
+                if (e.target === e.currentTarget ||
+                    e.target.classList.contains('canvas') ||
+                    e.target.classList.contains('connections')) {
+                    setIsPanning(true);
+                    setPanStart({ x: e.clientX, y: e.clientY });
+                }
             };
 
             const handleCanvasClick = (e) => {
@@ -1294,7 +1744,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                 setSelectedElement(null);
             };
 
-            const handleConnectionStart = (e, elementId) => {
+            // Função helper para calcular posição do ponto de conexão
+            const getConnectionPointPosition = (element, side) => {
+                const width = 220;  // largura do elemento
+                const height = 120; // altura aproximada do elemento
+
+                switch(side) {
+                    case 'top':
+                        return { x: element.x + width / 2, y: element.y };
+                    case 'right':
+                        return { x: element.x + width, y: element.y + height / 2 };
+                    case 'bottom':
+                        return { x: element.x + width / 2, y: element.y + height };
+                    case 'left':
+                        return { x: element.x, y: element.y + height / 2 };
+                    default:
+                        return { x: element.x + width, y: element.y + height / 2 };
+                }
+            };
+
+            const handleConnectionStart = (e, elementId, side = 'right') => {
                 e.stopPropagation();
                 e.preventDefault();
 
@@ -1302,17 +1771,16 @@ HTML_CONTENT = """<!DOCTYPE html>
                 if (!element) return;
 
                 const rect = canvasRef.current.getBoundingClientRect();
+                const startPos = getConnectionPointPosition(element, side);
 
                 // Inicia o arrasto da conexão
                 setIsDraggingConnection(true);
                 setConnectingFrom(elementId);
-                setDragConnectionStart({
-                    x: element.x + 220, // direita do elemento
-                    y: element.y + 60   // meio do elemento
-                });
+                setConnectionFromSide(side);
+                setDragConnectionStart(startPos);
                 setDragConnectionEnd({
-                    x: (e.clientX - rect.left) / zoomLevel,
-                    y: (e.clientY - rect.top) / zoomLevel
+                    x: (e.clientX - rect.left - panOffset.x) / zoomLevel,
+                    y: (e.clientY - rect.top - panOffset.y) / zoomLevel
                 });
             };
 
@@ -1321,8 +1789,8 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 const rect = canvasRef.current.getBoundingClientRect();
                 setDragConnectionEnd({
-                    x: (e.clientX - rect.left) / zoomLevel,
-                    y: (e.clientY - rect.top) / zoomLevel
+                    x: (e.clientX - rect.left - panOffset.x) / zoomLevel,
+                    y: (e.clientY - rect.top - panOffset.y) / zoomLevel
                 });
             };
 
@@ -1338,10 +1806,33 @@ HTML_CONTENT = """<!DOCTYPE html>
                     );
 
                     if (!connectionExists) {
+                        // Encontra o elemento de destino para calcular qual lado está mais próximo
+                        const toElement = elements.find(el => el.id === hoveredElement);
+                        let toSide = 'left'; // padrão
+
+                        if (toElement && dragConnectionEnd) {
+                            // Calcula qual lado está mais próximo do ponto onde o mouse está
+                            const width = 220;
+                            const height = 120;
+                            const centerX = toElement.x + width / 2;
+                            const centerY = toElement.y + height / 2;
+                            const dx = dragConnectionEnd.x - centerX;
+                            const dy = dragConnectionEnd.y - centerY;
+
+                            // Determina o lado mais próximo baseado em qual direção predomina
+                            if (Math.abs(dx) > Math.abs(dy)) {
+                                toSide = dx > 0 ? 'right' : 'left';
+                            } else {
+                                toSide = dy > 0 ? 'bottom' : 'top';
+                            }
+                        }
+
                         setConnections([...connections, {
                             id: Date.now(),
                             from: connectingFrom,
                             to: hoveredElement,
+                            fromSide: connectionFromSide,
+                            toSide: toSide,
                             conversion: 10
                         }]);
                     }
@@ -1351,6 +1842,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     setDragConnectionStart(null);
                     setDragConnectionEnd(null);
                     setConnectingFrom(null);
+                    setConnectionFromSide(null);
                     setHoveredElement(null);
                 } else {
                     // Se não soltou sobre um elemento, mostra o menu
@@ -1462,10 +1954,12 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const updateElementProperty = (property, value) => {
+                console.log('updateElementProperty chamada:', property, value, 'elemento:', selectedElement);
                 setElements(elements.map(el => {
                     if (el.id === selectedElement) {
+                        console.log('Atualizando elemento:', el.id, property, value);
                         // Se for um campo numérico
-                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm'].includes(property)) {
+                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'orderBumpPrice', 'orderBumpConversion'].includes(property)) {
                             // Se o valor estiver vazio, permite vazio (não força 0)
                             if (value === '' || value === null || value === undefined) {
                                 return { ...el, [property]: 0 };
@@ -1523,11 +2017,13 @@ HTML_CONTENT = """<!DOCTYPE html>
                             return updated;
                         }
                         // Se for booleano, mantém como está
-                        if (property === 'generatesRevenue') {
+                        if (property === 'generatesRevenue' || property === 'hasOrderBump') {
                             return { ...el, [property]: value };
                         }
                         // Caso contrário, mantém como string
-                        return { ...el, [property]: value };
+                        const updated = { ...el, [property]: value };
+                        console.log('Elemento atualizado:', updated);
+                        return updated;
                     }
                     return el;
                 }));
@@ -1549,25 +2045,49 @@ HTML_CONTENT = """<!DOCTYPE html>
                 }));
             };
 
-            const getConnectionPath = (fromId, toId) => {
+            const getConnectionPath = (fromId, toId, fromSide = 'right', toSide = 'left') => {
                 const fromEl = elements.find(el => el.id === fromId);
                 const toEl = elements.find(el => el.id === toId);
 
                 if (!fromEl || !toEl) return '';
 
-                // Elemento origem - saída pela direita
-                const fromX = fromEl.x + 220; // largura do elemento
-                const fromY = fromEl.y + 60; // meio do elemento
+                // Calcula posição do ponto de saída
+                const fromPos = getConnectionPointPosition(fromEl, fromSide);
+                const fromX = fromPos.x;
+                const fromY = fromPos.y;
 
-                // Elemento destino - entrada pela esquerda
-                const toX = toEl.x;
-                const toY = toEl.y + 60; // meio do elemento
+                // Calcula posição do ponto de entrada
+                const toPos = getConnectionPointPosition(toEl, toSide);
+                const toX = toPos.x;
+                const toY = toPos.y;
 
-                // Distância horizontal entre os elementos
-                const midX = (fromX + toX) / 2;
+                // Cria curva suave baseada na direção da conexão
+                const dx = toX - fromX;
+                const dy = toY - fromY;
+                const absDx = Math.abs(dx);
+                const absDy = Math.abs(dy);
 
-                // Cria uma curva suave horizontal
-                return `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`;
+                // Define o tamanho da curva baseado na distância
+                const curveOffset = Math.min(50, Math.max(absDx, absDy) / 4);
+
+                // Pontos de controle baseados nos lados
+                let cp1x = fromX, cp1y = fromY;
+                let cp2x = toX, cp2y = toY;
+
+                // Ajusta pontos de controle baseado no lado de saída
+                if (fromSide === 'right') cp1x = fromX + curveOffset;
+                else if (fromSide === 'left') cp1x = fromX - curveOffset;
+                else if (fromSide === 'top') cp1y = fromY - curveOffset;
+                else if (fromSide === 'bottom') cp1y = fromY + curveOffset;
+
+                // Ajusta pontos de controle baseado no lado de entrada
+                if (toSide === 'right') cp2x = toX + curveOffset;
+                else if (toSide === 'left') cp2x = toX - curveOffset;
+                else if (toSide === 'top') cp2y = toY - curveOffset;
+                else if (toSide === 'bottom') cp2y = toY + curveOffset;
+
+                // Cria uma curva suave
+                return `M ${fromX} ${fromY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${toX} ${toY}`;
             };
 
             const handleZoomIn = () => {
@@ -1604,6 +2124,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                             <div className="metric-label">💰 Investimento Total</div>
                             <div className="metric-value">
                                 R$ {dashboardMetrics.investment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                        </div>
+                        <div className="metric">
+                            <div className="metric-label">📊 CAC (Custo por Cliente)</div>
+                            <div className="metric-value">
+                                <span className={dashboardMetrics.cac < 50 ? 'metric-positive' : dashboardMetrics.cac < 150 ? 'metric-neutral' : 'metric-negative'}>
+                                    {dashboardMetrics.cac < 50 ? '✅' : dashboardMetrics.cac < 150 ? '⚠️' : '❌'}
+                                </span>
+                                R$ {dashboardMetrics.cac.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
@@ -1658,6 +2187,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                         <div
                             className="canvas-container"
                             ref={canvasRef}
+                            onMouseDown={handleCanvasMouseDown}
                             onMouseMove={handleMouseMove}
                             onMouseUp={(e) => {
                                 if (isDraggingConnection) {
@@ -1667,6 +2197,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 }
                             }}
                             onClick={handleCanvasClick}
+                            style={{ cursor: isPanning ? 'grabbing' : 'default' }}
                         >
                             <div className="zoom-controls">
                                 <button className="zoom-btn" onClick={handleZoomOut} title="Diminuir zoom">−</button>
@@ -1687,7 +2218,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         <polygon points="0 0, 10 3, 0 6" fill="#4299e1" />
                                     </marker>
                                 </defs>
-                                <g transform={`scale(${zoomLevel})`}>
+                                <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
                                     {connections.map((conn, idx) => {
                                         const fromEl = elements.find(el => el.id === conn.from);
                                         const toEl = elements.find(el => el.id === conn.to);
@@ -1700,7 +2231,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             <g key={conn.id || idx}>
                                                 <path
                                                     className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
-                                                    d={getConnectionPath(conn.from, conn.to)}
+                                                    d={getConnectionPath(conn.from, conn.to, conn.fromSide || 'right', conn.toSide || 'left')}
                                                     onClick={(e) => handleConnectionClick(e, conn)}
                                                 />
                                                 <rect
@@ -1732,46 +2263,59 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 </g>
                             </svg>
 
-                            <div className="canvas" style={{ transform: `scale(${zoomLevel})` }}>
+                            <div className="canvas" style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})` }}>
                                 {elements.map(element => {
                                     const metrics = metricsMap[element.id]?.calculatedMetrics || {};
+                                    // Se tem cor customizada, usa ela; senão usa a padrão do tipo
+                                    const elementColor = element.customColor || DEFAULT_COLORS[element.type];
+                                    // Determina cor do texto baseado no tipo (alguns fundos claros precisam texto escuro)
+                                    const textColor = needsDarkText(element.type) ? '#2d3748' : 'white';
+
                                     return (
                                         <div
                                             key={element.id}
-                                            className={`funnel-element ${element.color} ${
+                                            className={`funnel-element ${
                                                 selectedElement === element.id ? 'selected' : ''
                                             } ${isDragging && draggingElement === element.id ? 'dragging' : ''} ${
                                                 hoveredElement === element.id ? 'drag-hover' : ''
                                             }`}
                                             style={{
                                                 left: element.x,
-                                                top: element.y
+                                                top: element.y,
+                                                background: elementColor,
+                                                color: textColor
                                             }}
                                             onClick={(e) => handleElementClick(e, element)}
                                             onMouseDown={(e) => handleElementMouseDown(e, element)}
                                             onMouseEnter={() => handleElementHover(element.id, true)}
                                             onMouseLeave={() => handleElementHover(element.id, false)}
                                         >
+                                            {/* Pontos de conexão nos 4 lados */}
+                                            <div
+                                                className={`connection-point top ${connectingFrom === element.id ? 'connecting' : ''}`}
+                                                onMouseDown={(e) => handleConnectionStart(e, element.id, 'top')}
+                                                title="Conectar do topo"
+                                            />
+                                            <div
+                                                className={`connection-point right ${connectingFrom === element.id ? 'connecting' : ''}`}
+                                                onMouseDown={(e) => handleConnectionStart(e, element.id, 'right')}
+                                                title="Conectar da direita"
+                                            />
+                                            <div
+                                                className={`connection-point bottom ${connectingFrom === element.id ? 'connecting' : ''}`}
+                                                onMouseDown={(e) => handleConnectionStart(e, element.id, 'bottom')}
+                                                title="Conectar de baixo"
+                                            />
                                             <div
                                                 className={`connection-point left ${connectingFrom === element.id ? 'connecting' : ''}`}
-                                                onMouseDown={(e) => {
-                                                    e.stopPropagation();
-                                                    e.preventDefault();
-                                                }}
-                                                title="Entrada - Arraste uma conexão até aqui"
+                                                onMouseDown={(e) => handleConnectionStart(e, element.id, 'left')}
+                                                title="Conectar da esquerda"
                                             />
 
                                             <div className="element-header">
                                                 <span className="element-icon">{element.icon}</span>
                                                 <span className="element-title">{element.name}</span>
                                                 <div className="element-actions">
-                                                    <button
-                                                        className="element-btn"
-                                                        onMouseDown={(e) => handleConnectionStart(e, element.id)}
-                                                        title="Segurar e arrastar para conectar"
-                                                    >
-                                                        🔗
-                                                    </button>
                                                     <button
                                                         className="element-btn"
                                                         onClick={(e) => handleDeleteElement(e, element.id)}
@@ -1830,6 +2374,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                                 <div className="metric-row">
                                                                     <span>💰 R$ {element.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'} cada</span>
                                                                 </div>
+                                                                {element.hasOrderBump && metrics.orderBumpSales > 0 && (
+                                                                    <div className="metric-row">
+                                                                        <span>🎁 {metrics.orderBumpSales} bumps (R$ {(metrics.orderBumpRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</span>
+                                                                    </div>
+                                                                )}
                                                                 <div className="metric-row">
                                                                     <span>💵 R$ {(metrics.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} total</span>
                                                                 </div>
@@ -1895,6 +2444,48 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             onChange={(e) => updateElementProperty('name', e.target.value)}
                                             placeholder="Digite o nome..."
                                         />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="form-label">🎨 Cor do Elemento</label>
+                                        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                                            <input
+                                                type="color"
+                                                style={{
+                                                    width: '60px',
+                                                    height: '40px',
+                                                    border: '2px solid #e2e8f0',
+                                                    borderRadius: '8px',
+                                                    cursor: 'pointer'
+                                                }}
+                                                value={selectedElementData.customColorPicker || '#667eea'}
+                                                onChange={(e) => {
+                                                    const color = e.target.value;
+                                                    updateElementProperty('customColorPicker', color);
+                                                    updateElementProperty('customColor', `linear-gradient(135deg, ${color} 0%, ${color} 100%)`);
+                                                }}
+                                            />
+                                            <button
+                                                className="form-button"
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    background: '#e2e8f0',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '600',
+                                                    fontSize: '13px',
+                                                    color: '#4a5568'
+                                                }}
+                                                onClick={() => {
+                                                    updateElementProperty('customColor', null);
+                                                    updateElementProperty('customColorPicker', null);
+                                                }}
+                                            >
+                                                🔄 Restaurar Padrão
+                                            </button>
+                                        </div>
+                                        <small className="form-help">Personalize a cor deste elemento ou use a cor padrão</small>
                                     </div>
 
                                     {/* Campos específicos para TRÁFEGO */}
@@ -2162,6 +2753,49 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                             </div>
                                                         )}
                                                     </div>
+
+                                                    <div className="form-group">
+                                                        <div className="form-checkbox">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="has-orderbump"
+                                                                checked={selectedElementData.hasOrderBump || false}
+                                                                onChange={(e) => updateElementProperty('hasOrderBump', e.target.checked)}
+                                                            />
+                                                            <label htmlFor="has-orderbump">🎁 Possui Order Bump</label>
+                                                        </div>
+                                                    </div>
+
+                                                    {selectedElementData.hasOrderBump && (
+                                                        <>
+                                                            <div className="form-group">
+                                                                <label className="form-label">💰 Valor do Order Bump (R$)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-input"
+                                                                    value={selectedElementData.orderBumpPrice === 0 ? '' : selectedElementData.orderBumpPrice || ''}
+                                                                    onChange={(e) => updateElementProperty('orderBumpPrice', e.target.value)}
+                                                                    step="0.01"
+                                                                    placeholder="Ex: 47.00"
+                                                                />
+                                                                <small className="form-help">Valor adicional do order bump</small>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <label className="form-label">📊 Taxa de Conversão do Order Bump (%)</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-input"
+                                                                    value={selectedElementData.orderBumpConversion === 0 ? '' : selectedElementData.orderBumpConversion || ''}
+                                                                    onChange={(e) => updateElementProperty('orderBumpConversion', e.target.value)}
+                                                                    min="0"
+                                                                    max="100"
+                                                                    step="1"
+                                                                    placeholder="Ex: 30"
+                                                                />
+                                                                <small className="form-help">% de compradores que aceitam o order bump (típico: 20-40%)</small>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     {(() => {
                                                         const metrics = calculateMetrics()[selectedElementData.id]?.calculatedMetrics;
                                                         return metrics && metrics.revenue > 0 && (
@@ -2173,8 +2807,18 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                                 <div className="benchmark-item">
                                                                     <span>• Vendas: {metrics.leads?.toLocaleString('pt-BR') || 0} ({selectedElementData.conversionRate || 0}%)</span>
                                                                 </div>
+                                                                {selectedElementData.hasOrderBump && metrics.orderBumpSales > 0 && (
+                                                                    <>
+                                                                        <div className="benchmark-item">
+                                                                            <span>• Order Bumps: {metrics.orderBumpSales?.toLocaleString('pt-BR') || 0} ({selectedElementData.orderBumpConversion || 0}%)</span>
+                                                                        </div>
+                                                                        <div className="benchmark-item">
+                                                                            <span>• Receita Bump: R$ {(metrics.orderBumpRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
                                                                 <div className="benchmark-item">
-                                                                    <span>• Receita: R$ {metrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                    <span>• Receita Total: R$ {metrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                                                                 </div>
                                                             </div>
                                                         );
@@ -2450,9 +3094,9 @@ HTML_CONTENT = """<!DOCTYPE html>
                     { id: 4, type: 'vendas', name: 'Checkout', icon: '💳', color: 'color-vendas', x: 850, y: 150, conversionRate: 3, pageViewRate: 95, generatesRevenue: true, price: 497 }
                 ],
                 connections: [
-                    { id: 'c1', from: 1, to: 2, conversion: 100 },
-                    { id: 'c2', from: 2, to: 3, conversion: 100 },
-                    { id: 'c3', from: 3, to: 4, conversion: 100 }
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' }
                 ]
             },
             {
@@ -2468,10 +3112,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                     { id: 5, type: 'vendas', name: 'Oferta', icon: '💳', color: 'color-vendas', x: 1100, y: 150, conversionRate: 15, pageViewRate: 100, generatesRevenue: true, price: 997 }
                 ],
                 connections: [
-                    { id: 'c1', from: 1, to: 2, conversion: 100 },
-                    { id: 'c2', from: 2, to: 3, conversion: 100 },
-                    { id: 'c3', from: 3, to: 4, conversion: 100 },
-                    { id: 'c4', from: 4, to: 5, conversion: 100 }
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c4', from: 4, to: 5, conversion: 100, fromSide: 'right', toSide: 'left' }
                 ]
             },
             {
@@ -2486,14 +3130,14 @@ HTML_CONTENT = """<!DOCTYPE html>
                     { id: 4, type: 'upsell', name: 'Upsell R$ 97', icon: '⬆️', color: 'color-upsell', x: 850, y: 150, conversionRate: 30, pageViewRate: 100, generatesRevenue: true, price: 97 }
                 ],
                 connections: [
-                    { id: 'c1', from: 1, to: 2, conversion: 100 },
-                    { id: 'c2', from: 2, to: 3, conversion: 100 },
-                    { id: 'c3', from: 3, to: 4, conversion: 100 }
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' }
                 ]
             }
         ];
 
-        function FunnelDashboard({ onSelectFunnel, onCreateBlank }) {
+        function FunnelDashboard({ onSelectFunnel, onCreateBlank, onOpenSettings }) {
             const [funnels, setFunnels] = React.useState([]);
             const [showNewModal, setShowNewModal] = React.useState(false);
             const [newName, setNewName] = React.useState('');
@@ -2549,7 +3193,32 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             return (
-                <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px' }}>
+                <div style={{ minHeight: '100vh', maxHeight: '100vh', overflow: 'auto', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px', position: 'relative' }}>
+                    <button
+                        onClick={onOpenSettings}
+                        style={{
+                            position: 'fixed',
+                            top: '20px',
+                            right: '20px',
+                            zIndex: '1000',
+                            padding: '12px 20px',
+                            background: 'rgba(255,255,255,0.2)',
+                            border: '2px solid rgba(255,255,255,0.3)',
+                            borderRadius: '12px',
+                            color: 'white',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                        ⚙️ Configurações
+                    </button>
                     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                         <h1 style={{ color: 'white', fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>🚀 Meus Funis</h1>
                         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '18px', textAlign: 'center', marginBottom: '40px' }}>Escolha um template ou crie do zero</p>
@@ -2610,9 +3279,204 @@ HTML_CONTENT = """<!DOCTYPE html>
             );
         }
 
+        function SettingsPanel({ onClose }) {
+            // Carrega configurações do localStorage ou usa padrão
+            const loadConfig = () => {
+                const saved = localStorage.getItem('systemConfig');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return {
+                    categories: ELEMENT_CATEGORIES,
+                    fieldLabels: {
+                        investment: 'Investimento Planejado',
+                        impressions: 'Impressões Esperadas',
+                        clicks: 'Cliques Esperados',
+                        cpm: 'CPM - Custo por Mil',
+                        ctr: 'CTR - Taxa de Cliques',
+                        conversionRate: 'Taxa de Conversão',
+                        price: 'Preço do Produto',
+                        url: 'URL da Página',
+                        description: 'Descrição',
+                        name: 'Nome do Elemento',
+                        orderBumpPrice: 'Preço do Order Bump',
+                        orderBumpConversion: 'Taxa de Conversão do Order Bump'
+                    }
+                };
+            };
+
+            const [config, setConfig] = useState(loadConfig());
+            const [hasChanges, setHasChanges] = useState(false);
+
+            const updateCategoryName = (categoryIndex, newName) => {
+                const newConfig = { ...config };
+                newConfig.categories[categoryIndex].name = newName;
+                setConfig(newConfig);
+                setHasChanges(true);
+            };
+
+            const updateCategoryIcon = (categoryIndex, newIcon) => {
+                const newConfig = { ...config };
+                newConfig.categories[categoryIndex].icon = newIcon;
+                setConfig(newConfig);
+                setHasChanges(true);
+            };
+
+            const updateElementName = (categoryIndex, elementIndex, newName) => {
+                const newConfig = { ...config };
+                newConfig.categories[categoryIndex].elements[elementIndex].name = newName;
+                setConfig(newConfig);
+                setHasChanges(true);
+            };
+
+            const updateElementIcon = (categoryIndex, elementIndex, newIcon) => {
+                const newConfig = { ...config };
+                newConfig.categories[categoryIndex].elements[elementIndex].icon = newIcon;
+                setConfig(newConfig);
+                setHasChanges(true);
+            };
+
+            const updateFieldLabel = (fieldKey, newLabel) => {
+                const newConfig = { ...config };
+                newConfig.fieldLabels[fieldKey] = newLabel;
+                setConfig(newConfig);
+                setHasChanges(true);
+            };
+
+            const handleSave = () => {
+                localStorage.setItem('systemConfig', JSON.stringify(config));
+                setHasChanges(false);
+                // Recarrega a página para aplicar mudanças
+                window.location.reload();
+            };
+
+            const handleReset = () => {
+                if (confirm('Tem certeza que deseja restaurar todas as configurações padrão? Esta ação não pode ser desfeita.')) {
+                    localStorage.removeItem('systemConfig');
+                    window.location.reload();
+                }
+            };
+
+            return (
+                <div className="settings-overlay" onClick={onClose}>
+                    <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
+                        <div className="settings-header">
+                            <h2>⚙️ Configurações do Sistema</h2>
+                            <button className="settings-close-btn" onClick={onClose}>×</button>
+                        </div>
+
+                        <div className="settings-content">
+                            {/* Seção: Categorias */}
+                            <div className="settings-section">
+                                <div className="settings-section-header">
+                                    <span className="settings-section-icon">📁</span>
+                                    <h3 className="settings-section-title">Categorias de Elementos</h3>
+                                </div>
+                                {config.categories.map((category, catIndex) => (
+                                    <div key={catIndex} className="category-editor">
+                                        <div className="category-editor-header">
+                                            <input
+                                                type="text"
+                                                className="settings-input"
+                                                value={category.icon}
+                                                onChange={(e) => updateCategoryIcon(catIndex, e.target.value)}
+                                                placeholder="Ícone"
+                                                style={{ width: '60px', textAlign: 'center', fontSize: '20px' }}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="settings-input"
+                                                value={category.name}
+                                                onChange={(e) => updateCategoryName(catIndex, e.target.value)}
+                                                placeholder="Nome da categoria"
+                                                style={{ flex: 1 }}
+                                            />
+                                        </div>
+                                        <div className="settings-grid">
+                                            {category.elements.map((element, elemIndex) => (
+                                                <div key={elemIndex} className="settings-card">
+                                                    <div className="settings-card-header">
+                                                        <span className="settings-card-icon">{element.icon}</span>
+                                                        <h4 className="settings-card-title">{element.type}</h4>
+                                                    </div>
+                                                    <div className="settings-input-group">
+                                                        <label className="settings-label">Ícone</label>
+                                                        <input
+                                                            type="text"
+                                                            className="settings-input"
+                                                            value={element.icon}
+                                                            onChange={(e) => updateElementIcon(catIndex, elemIndex, e.target.value)}
+                                                            placeholder="Digite um emoji"
+                                                        />
+                                                    </div>
+                                                    <div className="settings-input-group">
+                                                        <label className="settings-label">Nome de Exibição</label>
+                                                        <input
+                                                            type="text"
+                                                            className="settings-input"
+                                                            value={element.name}
+                                                            onChange={(e) => updateElementName(catIndex, elemIndex, e.target.value)}
+                                                            placeholder="Nome do elemento"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Seção: Labels de Campos */}
+                            <div className="settings-section">
+                                <div className="settings-section-header">
+                                    <span className="settings-section-icon">🏷️</span>
+                                    <h3 className="settings-section-title">Labels dos Campos</h3>
+                                </div>
+                                <div className="settings-grid">
+                                    {Object.entries(config.fieldLabels).map(([key, label]) => (
+                                        <div key={key} className="settings-card">
+                                            <div className="settings-input-group">
+                                                <label className="settings-label">Campo: {key}</label>
+                                                <input
+                                                    type="text"
+                                                    className="settings-input"
+                                                    value={label}
+                                                    onChange={(e) => updateFieldLabel(key, e.target.value)}
+                                                    placeholder="Label do campo"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="settings-footer">
+                            <button className="settings-btn settings-btn-secondary" onClick={handleReset}>
+                                🔄 Restaurar Padrões
+                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button className="settings-btn settings-btn-secondary" onClick={onClose}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="settings-btn settings-btn-primary"
+                                    onClick={handleSave}
+                                    disabled={!hasChanges}
+                                >
+                                    💾 Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         function App() {
             const [view, setView] = React.useState('dashboard');
             const [funnelId, setFunnelId] = React.useState(null);
+            const [showSettings, setShowSettings] = React.useState(false);
 
             const selectFunnel = (id) => {
                 setFunnelId(id);
@@ -2624,11 +3488,16 @@ HTML_CONTENT = """<!DOCTYPE html>
                 setFunnelId(null);
             };
 
-            if (view === 'dashboard') {
-                return <FunnelDashboard onSelectFunnel={selectFunnel} />;
-            }
-
-            return <FunnelBuilder funnelId={funnelId} onBack={backToDashboard} />;
+            return (
+                <>
+                    {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+                    {view === 'dashboard' ? (
+                        <FunnelDashboard onSelectFunnel={selectFunnel} onOpenSettings={() => setShowSettings(true)} />
+                    ) : (
+                        <FunnelBuilder funnelId={funnelId} onBack={backToDashboard} />
+                    )}
+                </>
+            );
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));

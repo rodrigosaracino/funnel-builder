@@ -3,7 +3,18 @@
     "allow": [
       "Bash(python3:*)",
       "Bash(git restore:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(curl:*)",
+      "Read(//private/tmp/**)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdiciona dashboard com templates de funis e lógica especial para Downsell\n\n✨ Funcionalidades adicionadas:\n- Dashboard inicial com seleção de templates prontos\n- 3 templates: VSL Simples, Webinar e Tripwire\n- Criação de funis do zero via modal\n- Sistema de navegação entre dashboard e editor\n- Auto-save de funis no localStorage\n- Botão voltar no editor\n- Lista de funis criados com opção de deletar\n- Lógica especial para Downsell receber não-convertidos\n\n🎯 Melhorias:\n- Downsell agora conta corretamente pessoas que NÃO converteram\n- Campo ícone para personalizar elementos\n- Campo nome do público em Retargeting\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(kill:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(pkill:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []
