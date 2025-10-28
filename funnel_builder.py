@@ -768,6 +768,8 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-size: 14px;
         }
 
+        .color-google { background: linear-gradient(135deg, #4285f4 0%, #34a853 100%); }
+        .color-facebook { background: linear-gradient(135deg, #1877f2 0%, #0a66c2 100%); }
         .color-trafego { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .color-retargeting { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
         .color-landing { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
@@ -1215,7 +1217,9 @@ HTML_CONTENT = """<!DOCTYPE html>
                 name: 'Tráfego',
                 icon: '🎯',
                 elements: [
-                    { type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego' },
+                    { type: 'google', name: 'Google Ads', icon: '🔍', color: 'color-google' },
+                    { type: 'facebook', name: 'Facebook Ads', icon: '📘', color: 'color-facebook' },
+                    { type: 'trafego', name: 'Outros Tráfegos', icon: '🎯', color: 'color-trafego' },
                     { type: 'retargeting', name: 'Retargeting', icon: '🔄', color: 'color-retargeting' }
                 ]
             },
@@ -1276,7 +1280,9 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         // Mapeamento de cores padrão para cada tipo de elemento
         const DEFAULT_COLORS = {
-            // Tráfego - Roxo/Gradiente
+            // Tráfego - Cores específicas por plataforma
+            'google': 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
+            'facebook': 'linear-gradient(135deg, #1877f2 0%, #0a66c2 100%)',
             'trafego': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             'retargeting': 'linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%)',
 
@@ -1486,7 +1492,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                     let costPerLead = 0;
 
                     // Se é elemento raiz (sem inputTraffic), calcula a partir de impressões/cliques
-                    if ((element.type === 'trafego' || element.type === 'retargeting') && element.clicks > 0) {
+                    const isTrafficSource = ['trafego', 'google', 'facebook', 'retargeting'].includes(element.type);
+                    if (isTrafficSource && element.clicks > 0) {
                         // Para retargeting, usa investment ou retargetingInvestment
                         investment = element.type === 'retargeting'
                             ? (element.investment || element.retargetingInvestment || 0)
@@ -2052,6 +2059,9 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const handleElementMenuSelect = (elementType) => {
+                // Google Ads sempre usa modo 'metrics' (CPM)
+                const defaultTrafficMode = elementType.type === 'google' ? 'metrics' : 'absolute';
+
                 const newElement = {
                     id: Date.now(),
                     type: elementType.type,
@@ -2065,7 +2075,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                     clicks: 0,
                     ctr: 0,
                     cpm: 0,
-                    trafficMode: 'absolute', // 'absolute' ou 'metrics'
+                    cpc: 0, // Custo Por Clique (usado pelo Google Ads)
+                    trafficMode: defaultTrafficMode, // 'absolute' ou 'metrics'
                     pageViewRate: 100,
                     conversionRate: 0,
                     price: 0,
@@ -2140,7 +2151,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     if (el.id === selectedElement) {
                         console.log('Atualizando elemento:', el.id, property, value);
                         // Se for um campo numérico
-                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'orderBumpPrice', 'orderBumpConversion', 'addToCartRate', 'retargetingInvestment'].includes(property)) {
+                        if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'cpc', 'orderBumpPrice', 'orderBumpConversion', 'addToCartRate', 'retargetingInvestment'].includes(property)) {
                             // Se o valor estiver vazio, permite vazio (não força 0)
                             if (value === '' || value === null || value === undefined) {
                                 return { ...el, [property]: 0 };
@@ -2148,12 +2159,24 @@ HTML_CONTENT = """<!DOCTYPE html>
                             const numValue = parseFloat(value);
                             const updated = { ...el, [property]: numValue };
 
-                            // Cálculos automáticos para modo de tráfego (trafego e retargeting)
-                            if (el.type === 'trafego' || el.type === 'retargeting') {
+                            // Cálculos automáticos para modo de tráfego (trafego, google, facebook e retargeting)
+                            const isTrafficElement = ['trafego', 'google', 'facebook', 'retargeting'].includes(el.type);
+                            if (isTrafficElement) {
                                 // Para retargeting, usa investment ou retargetingInvestment
                                 const inv = el.type === 'retargeting' ? (updated.investment || updated.retargetingInvestment) : updated.investment;
 
-                                if (el.trafficMode === 'metrics') {
+                                // Google usa CPC (Custo Por Clique)
+                                if (el.type === 'google') {
+                                    // Calcula cliques baseado em CPC e investimento
+                                    if (updated.cpc > 0 && inv > 0) {
+                                        updated.clicks = Math.round(inv / updated.cpc);
+                                    }
+                                    // Calcula CPC baseado em investimento e cliques
+                                    if (updated.clicks > 0 && inv > 0 && updated.cpc === 0) {
+                                        updated.cpc = parseFloat((inv / updated.clicks).toFixed(2));
+                                    }
+                                } else if (el.trafficMode === 'metrics') {
+                                    // Facebook/Outros usam CPM + CTR
                                     // Sempre recalcula impressões se temos CPM e investimento
                                     if (updated.cpm > 0 && inv > 0) {
                                         updated.impressions = Math.round((inv / updated.cpm) * 1000);
@@ -2521,7 +2544,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             </div>
 
                                             <div className="element-metrics">
-                                                {element.type === 'trafego' ? (
+                                                {['trafego', 'google', 'facebook'].includes(element.type) ? (
                                                     // Métricas para Tráfego
                                                     <>
                                                         <div className="metric-row">
@@ -2709,22 +2732,40 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     </div>
 
                                     {/* Campos específicos para TRÁFEGO */}
-                                    {selectedElementData.type === 'trafego' && !connections.some(conn => conn.to === selectedElementData.id) && (
+                                    {['trafego', 'google', 'facebook'].includes(selectedElementData.type) && !connections.some(conn => conn.to === selectedElementData.id) && (
                                         <>
-                                            <div className="traffic-mode-toggle">
-                                                <div
-                                                    className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
-                                                    onClick={() => updateElementProperty('trafficMode', 'absolute')}
-                                                >
-                                                    📊 Números Absolutos
+                                            {/* Google Ads não tem toggle - sempre usa CPM */}
+                                            {selectedElementData.type !== 'google' && (
+                                                <div className="traffic-mode-toggle">
+                                                    <div
+                                                        className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
+                                                        onClick={() => updateElementProperty('trafficMode', 'absolute')}
+                                                    >
+                                                        📊 Números Absolutos
+                                                    </div>
+                                                    <div
+                                                        className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
+                                                        onClick={() => updateElementProperty('trafficMode', 'metrics')}
+                                                    >
+                                                        📈 CTR & CPM
+                                                    </div>
                                                 </div>
-                                                <div
-                                                    className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
-                                                    onClick={() => updateElementProperty('trafficMode', 'metrics')}
-                                                >
-                                                    📈 CTR & CPM
+                                            )}
+
+                                            {/* Google Ads sempre mostra info de que usa CPC */}
+                                            {selectedElementData.type === 'google' && (
+                                                <div style={{
+                                                    background: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
+                                                    color: 'white',
+                                                    padding: '12px',
+                                                    borderRadius: '8px',
+                                                    marginBottom: '20px',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    🔍 Google Ads utiliza modelo CPC (Custo Por Clique)
                                                 </div>
-                                            </div>
+                                            )}
 
                                             <div className="form-group">
                                                 <label className="form-label">💰 Investimento Planejado (R$)</label>
@@ -2744,7 +2785,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 )}
                                             </div>
 
-                                            {selectedElementData.trafficMode === 'absolute' ? (
+                                            {/* Google sempre usa CPM, outros podem escolher */}
+                                            {(selectedElementData.trafficMode === 'absolute' && selectedElementData.type !== 'google') ? (
                                                 <>
                                                     <div className="form-group">
                                                         <label className="form-label">👁️ Impressões Esperadas</label>
@@ -2769,8 +2811,25 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         <small className="form-help">Quantas pessoas clicarão? (CTR calculado: {selectedElementData.ctr}%)</small>
                                                     </div>
                                                 </>
+                                            ) : selectedElementData.type === 'google' ? (
+                                                <>
+                                                    {/* Google Ads usa CPC (Custo Por Clique) */}
+                                                    <div className="form-group">
+                                                        <label className="form-label">💵 CPC - Custo por Clique (R$)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={selectedElementData.cpc === 0 ? '' : selectedElementData.cpc}
+                                                            onChange={(e) => updateElementProperty('cpc', e.target.value)}
+                                                            placeholder="Ex: 2.50"
+                                                            step="0.01"
+                                                        />
+                                                        <small className="form-help">Quanto você paga por cada clique? (Cliques calculados: {selectedElementData.clicks.toLocaleString('pt-BR')})</small>
+                                                    </div>
+                                                </>
                                             ) : (
                                                 <>
+                                                    {/* Facebook e Outros usam CPM + CTR */}
                                                     <div className="form-group">
                                                         <label className="form-label">💵 CPM - Custo por Mil (R$)</label>
                                                         <input
