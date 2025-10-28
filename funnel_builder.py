@@ -2222,6 +2222,13 @@ HTML_CONTENT = """<!DOCTYPE html>
                 }));
             };
 
+            const deleteConnection = (connectionId) => {
+                if (confirm('Tem certeza que deseja deletar esta conexão?')) {
+                    setConnections(connections.filter(conn => conn.id !== connectionId));
+                    setSelectedConnection(null); // Deseleciona após deletar
+                }
+            };
+
             const getConnectionPath = (fromId, toId, fromSide = 'right', toSide = 'left') => {
                 const fromEl = elements.find(el => el.id === fromId);
                 const toEl = elements.find(el => el.id === toId);
@@ -3441,6 +3448,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     <div className="empty-state" style={{marginTop: '20px'}}>
                                         Esta é uma conexão entre elementos. Ajuste a taxa de conversão acima.
                                     </div>
+                                    <button
+                                        onClick={() => deleteConnection(selectedConnection)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '12px',
+                                            marginTop: '20px',
+                                            background: 'linear-gradient(135deg, #f56565 0%, #c53030 100%)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            fontWeight: '600',
+                                            fontSize: '14px',
+                                            transition: 'opacity 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.target.style.opacity = '0.9'}
+                                        onMouseLeave={(e) => e.target.style.opacity = '1'}
+                                    >
+                                        🗑️ Deletar Conexão
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="empty-state">
