@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  funnel-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: funnel-builder-app
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persiste o banco de dados SQLite
+      - funnel-data:/app/data
+      # Opcional: Para desenvolvimento, monta o código fonte
+      # - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  funnel-data:
+    driver: local

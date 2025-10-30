@@ -5,6 +5,7 @@ Gerencia conexão SQLite e operações CRUD
 
 import sqlite3
 import json
+import os
 from datetime import datetime
 from typing import List, Dict, Optional
 
@@ -12,7 +13,15 @@ from typing import List, Dict, Optional
 class Database:
     """Classe para gerenciar operações do banco de dados"""
 
-    def __init__(self, db_path='funnel_builder.db'):
+    def __init__(self, db_path=None):
+        # Se rodando em Docker, usa /app/data/
+        # Senão, usa o diretório atual
+        if db_path is None:
+            if os.path.exists('/app/data'):
+                db_path = '/app/data/funnel_builder.db'
+            else:
+                db_path = 'funnel_builder.db'
+
         self.db_path = db_path
         self.init_db()
 
