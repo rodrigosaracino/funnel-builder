@@ -12,6 +12,8 @@ import json
 import urllib.parse
 from auth import auth
 from models import User, Funnel
+from webhooks import webhook_manager
+import os
 
 HTML_CONTENT = """<!DOCTYPE html>
 <html lang="pt-BR">
@@ -4314,6 +4316,16 @@ HTML_CONTENT = """<!DOCTYPE html>
 </body>
 </html>"""
 
+# Configuração do webhook
+# Pode ser configurado via variável de ambiente WEBHOOK_URL
+# Exemplo: export WEBHOOK_URL="https://hooks.zapier.com/hooks/catch/123456/abcdef/"
+WEBHOOK_URL = os.getenv('WEBHOOK_URL', '')
+if WEBHOOK_URL:
+    webhook_manager.configure(WEBHOOK_URL)
+    print(f"🔗 Webhook configurado para: {WEBHOOK_URL}")
+else:
+    print("ℹ️ Webhook não configurado (defina WEBHOOK_URL para ativar)")
+
 
 class FunnelBuilderHandler(BaseHTTPRequestHandler):
     """Handler HTTP para servir a aplicação Funnel Builder e REST API"""
@@ -4403,6 +4415,9 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
             )
 
             if result['success']:
+                # Envia webhook de novo usuário registrado
+                webhook_manager.on_user_registered(result['user'].to_dict())
+
                 self._send_json({
                     'success': True,
                     'message': result['message'],

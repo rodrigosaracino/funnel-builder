@@ -13,6 +13,8 @@ services:
       # - .:/app
     environment:
       - PYTHONUNBUFFERED=1
+      # Configurar webhook (opcional)
+      # - WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/123456/abcdef/
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
