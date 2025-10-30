@@ -8,6 +8,10 @@ Versão: 1.0
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import webbrowser
 import threading
+import json
+import urllib.parse
+from auth import auth
+from models import User, Funnel
 
 HTML_CONTENT = """<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1200,6 +1204,76 @@ HTML_CONTENT = """<!DOCTYPE html>
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
 
+        // ==================== API HELPERS ====================
+        const API_BASE = '';  // Mesmo domínio
+
+        // Helper para fazer chamadas autenticadas à API
+        const apiCall = async (endpoint, options = {}) => {
+            const token = localStorage.getItem('authToken');
+
+            const config = {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            };
+
+            // Adiciona token se existir
+            if (token) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_BASE}${endpoint}`, config);
+
+            // Se retornar 401 e tinha token, desloga
+            if (response.status === 401) {
+                // Se retornou 401 e não tem token, é normal (não está logado)
+                if (!token) {
+                    return response.json();
+                }
+
+                // Se tinha token, significa que expirou - desloga e recarrega
+                console.log('Token expirado, redirecionando para login...');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                window.location.reload();
+                return null;
+            }
+
+            return response.json();
+        };
+
+        // API: Buscar todos os funis
+        const apiFetchFunnels = async () => {
+            return await apiCall('/api/funnels');
+        };
+
+        // API: Criar funil
+        const apiCreateFunnel = async (funnelData) => {
+            return await apiCall('/api/funnels', {
+                method: 'POST',
+                body: JSON.stringify(funnelData)
+            });
+        };
+
+        // API: Atualizar funil
+        const apiUpdateFunnel = async (funnelId, funnelData) => {
+            return await apiCall(`/api/funnels/${funnelId}`, {
+                method: 'PUT',
+                body: JSON.stringify(funnelData)
+            });
+        };
+
+        // API: Deletar funil
+        const apiDeleteFunnel = async (funnelId) => {
+            return await apiCall(`/api/funnels/${funnelId}`, {
+                method: 'DELETE'
+            });
+        };
+
+        // ==================== FIM API HELPERS ====================
+
         // Função para carregar configurações do sistema
         const loadSystemConfig = () => {
             const saved = localStorage.getItem('systemConfig');
@@ -1347,10 +1421,46 @@ HTML_CONTENT = """<!DOCTYPE html>
         function LoginScreen({ onLogin }) {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
+            const [name, setName] = useState('');
+            const [isRegister, setIsRegister] = useState(false);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
 
-            const handleSubmit = (e) => {
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                onLogin();
+                setLoading(true);
+                setError('');
+
+                try {
+                    const endpoint = isRegister ? '/api/register' : '/api/login';
+                    const body = isRegister
+                        ? { email, password, name }
+                        : { email, password };
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Salva token e dados do usuário
+                        localStorage.setItem('authToken', data.token);
+                        localStorage.setItem('currentUser', JSON.stringify(data.user));
+                        onLogin();
+                    } else {
+                        setError(data.message || 'Erro ao fazer login');
+                    }
+                } catch (err) {
+                    setError('Erro ao conectar com o servidor');
+                    console.error('Erro:', err);
+                } finally {
+                    setLoading(false);
+                }
             };
 
             return (
@@ -1361,7 +1471,35 @@ HTML_CONTENT = """<!DOCTYPE html>
                             <h1 className="login-title">Funnel Builder</h1>
                             <p className="login-subtitle">Construa funis de vendas de alta conversão</p>
                         </div>
+
+                        {error && (
+                            <div style={{
+                                padding: '12px',
+                                marginBottom: '20px',
+                                background: '#fee',
+                                border: '1px solid #fcc',
+                                borderRadius: '8px',
+                                color: '#c33',
+                                fontSize: '14px'
+                            }}>
+                                ⚠️ {error}
+                            </div>
+                        )}
+
                         <form className="login-form" onSubmit={handleSubmit}>
+                            {isRegister && (
+                                <div className="login-input-group">
+                                    <label className="login-label" htmlFor="name">Nome</label>
+                                    <input
+                                        id="name"
+                                        type="text"
+                                        className="login-input"
+                                        placeholder="Seu nome completo"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                    />
+                                </div>
+                            )}
                             <div className="login-input-group">
                                 <label className="login-label" htmlFor="email">Email</label>
                                 <input
@@ -1384,14 +1522,50 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
+                                    minLength={6}
                                 />
+                                {isRegister && (
+                                    <small style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                                        Mínimo de 6 caracteres
+                                    </small>
+                                )}
                             </div>
-                            <button type="submit" className="login-button">
-                                Acessar Sistema
+                            <button
+                                type="submit"
+                                className="login-button"
+                                disabled={loading}
+                                style={{ opacity: loading ? 0.6 : 1 }}
+                            >
+                                {loading ? '⏳ Aguarde...' : (isRegister ? '📝 Criar Conta' : '🚀 Acessar Sistema')}
                             </button>
                         </form>
+
+                        <div style={{
+                            textAlign: 'center',
+                            marginTop: '20px',
+                            paddingTop: '20px',
+                            borderTop: '1px solid #e2e8f0'
+                        }}>
+                            <button
+                                onClick={() => {
+                                    setIsRegister(!isRegister);
+                                    setError('');
+                                }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#667eea',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    textDecoration: 'underline'
+                                }}
+                            >
+                                {isRegister ? '← Já tenho conta' : '✨ Criar nova conta'}
+                            </button>
+                        </div>
+
                         <div className="login-footer">
-                            Versão 1.0 - Sistema de Funis de Vendas
+                            Versão 2.0 - Sistema de Funis com Banco de Dados
                         </div>
                     </div>
                 </div>
@@ -1402,33 +1576,81 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [elements, setElements] = useState([]);
             const [connections, setConnections] = useState([]);
             const [currentFunnel, setCurrentFunnel] = useState(null);
+            const [saving, setSaving] = useState(false);
+            const saveTimeoutRef = useRef(null);
+            const initialLoadRef = useRef(false);
 
-            // Carrega o funil específico
+            // Carrega o funil específico da API
             React.useEffect(() => {
                 if (funnelId) {
-                    const funnels = JSON.parse(localStorage.getItem('funnels') || '[]');
-                    const funnel = funnels.find(f => f.id === funnelId);
-                    if (funnel) {
-                        setCurrentFunnel(funnel);
-                        setElements(funnel.elements || []);
-                        setConnections(funnel.connections || []);
-                    }
+                    loadFunnel();
                 }
             }, [funnelId]);
 
-            // Auto-salva quando elementos ou conexões mudam
-            React.useEffect(() => {
-                if (funnelId && currentFunnel) {
-                    const funnels = JSON.parse(localStorage.getItem('funnels') || '[]');
-                    const updated = funnels.map(f => {
-                        if (f.id === funnelId) {
-                            return { ...f, elements, connections };
-                        }
-                        return f;
-                    });
-                    localStorage.setItem('funnels', JSON.stringify(updated));
+            const loadFunnel = async () => {
+                try {
+                    const data = await apiCall(`/api/funnels/${funnelId}`);
+                    if (data && data.funnel) {
+                        setCurrentFunnel(data.funnel);
+                        setElements(data.funnel.elements || []);
+                        setConnections(data.funnel.connections || []);
+                        // Marca como carregado para não salvar no primeiro render
+                        setTimeout(() => {
+                            initialLoadRef.current = true;
+                        }, 100);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar funil:', error);
                 }
-            }, [elements, connections, funnelId, currentFunnel]);
+            };
+
+            // Auto-salva com debounce quando elementos ou conexões mudam
+            React.useEffect(() => {
+                // Não salva no carregamento inicial
+                if (!initialLoadRef.current || !funnelId) {
+                    return;
+                }
+
+                // Limpa timeout anterior
+                if (saveTimeoutRef.current) {
+                    clearTimeout(saveTimeoutRef.current);
+                }
+
+                // Agenda novo salvamento após 2 segundos de inatividade
+                saveTimeoutRef.current = setTimeout(() => {
+                    console.log('💾 Salvando funil automaticamente...');
+                    saveFunnel();
+                }, 2000);
+
+                // Cleanup
+                return () => {
+                    if (saveTimeoutRef.current) {
+                        clearTimeout(saveTimeoutRef.current);
+                    }
+                };
+            }, [elements, connections, funnelId]);
+
+            const [saveSuccess, setSaveSuccess] = useState(false);
+
+            const saveFunnel = async () => {
+                if (saving) return;
+                setSaving(true);
+                setSaveSuccess(false);
+
+                try {
+                    await apiUpdateFunnel(funnelId, {
+                        elements,
+                        connections
+                    });
+                    console.log('✅ Funil salvo automaticamente');
+                    setSaveSuccess(true);
+                    setTimeout(() => setSaveSuccess(false), 2000);
+                } catch (error) {
+                    console.error('❌ Erro ao salvar funil:', error);
+                } finally {
+                    setSaving(false);
+                }
+            };
             const [selectedElement, setSelectedElement] = useState(null);
             const [selectedConnection, setSelectedConnection] = useState(null);
             const [draggingElement, setDraggingElement] = useState(null);
@@ -2326,11 +2548,29 @@ HTML_CONTENT = """<!DOCTYPE html>
             return (
                 <div className="app">
                     <div className="dashboard">
-                        {onBack && (
-                            <button onClick={onBack} style={{ padding: '10px 20px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-                                ← Voltar
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            {onBack && (
+                                <button onClick={onBack} style={{ padding: '10px 20px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                                    ← Voltar
+                                </button>
+                            )}
+                            <button
+                                onClick={() => saveFunnel()}
+                                disabled={saving}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: saveSuccess ? 'rgba(46, 213, 115, 0.5)' : (saving ? 'rgba(100,100,100,0.3)' : 'rgba(46, 213, 115, 0.3)'),
+                                    color: 'white',
+                                    border: saveSuccess ? '1px solid rgba(46, 213, 115, 0.8)' : (saving ? '1px solid rgba(100,100,100,0.5)' : '1px solid rgba(46, 213, 115, 0.5)'),
+                                    borderRadius: '8px',
+                                    cursor: saving ? 'not-allowed' : 'pointer',
+                                    fontWeight: '600',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
+                                {saveSuccess ? '✅ Salvo!' : (saving ? '💾 Salvando...' : '💾 Salvar')}
                             </button>
-                        )}
+                        </div>
                         <div className="metric">
                             <div className="metric-label">🎯 Visitantes Iniciais</div>
                             <div className="metric-value">
@@ -3610,54 +3850,84 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [funnels, setFunnels] = React.useState([]);
             const [showNewModal, setShowNewModal] = React.useState(false);
             const [newName, setNewName] = React.useState('');
+            const [loading, setLoading] = React.useState(true);
 
+            // Carrega funis da API ao montar o componente
             React.useEffect(() => {
-                const saved = JSON.parse(localStorage.getItem('funnels') || '[]');
-                setFunnels(saved);
+                loadFunnels();
             }, []);
 
-            const createFromTemplate = (template) => {
-                const newFunnel = {
-                    id: Date.now().toString(),
-                    name: template.name,
-                    icon: template.icon,
-                    createdAt: new Date().toISOString(),
-                    elements: template.elements,
-                    connections: template.connections
-                };
-                const updated = [...funnels, newFunnel];
-                localStorage.setItem('funnels', JSON.stringify(updated));
-                setFunnels(updated);
-                onSelectFunnel(newFunnel.id);
+            const loadFunnels = async () => {
+                setLoading(true);
+                try {
+                    const data = await apiFetchFunnels();
+                    if (data && data.funnels) {
+                        setFunnels(data.funnels);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar funis:', error);
+                } finally {
+                    setLoading(false);
+                }
             };
 
-            const createBlank = () => {
+            const createFromTemplate = async (template) => {
+                try {
+                    const result = await apiCreateFunnel({
+                        name: template.name,
+                        icon: template.icon,
+                        elements: template.elements,
+                        connections: template.connections
+                    });
+
+                    if (result && result.funnel) {
+                        setFunnels([...funnels, result.funnel]);
+                        onSelectFunnel(result.funnel.id);
+                    }
+                } catch (error) {
+                    console.error('Erro ao criar funil:', error);
+                    alert('Erro ao criar funil do template');
+                }
+            };
+
+            const createBlank = async () => {
                 if (!newName.trim()) {
                     alert('Digite um nome para o funil');
                     return;
                 }
-                const newFunnel = {
-                    id: Date.now().toString(),
-                    name: newName,
-                    icon: '🎯',
-                    createdAt: new Date().toISOString(),
-                    elements: [],
-                    connections: []
-                };
-                const updated = [...funnels, newFunnel];
-                localStorage.setItem('funnels', JSON.stringify(updated));
-                setFunnels(updated);
-                setShowNewModal(false);
-                setNewName('');
-                onSelectFunnel(newFunnel.id);
+
+                try {
+                    const result = await apiCreateFunnel({
+                        name: newName,
+                        icon: '🎯',
+                        elements: [],
+                        connections: []
+                    });
+
+                    if (result && result.funnel) {
+                        setFunnels([...funnels, result.funnel]);
+                        setShowNewModal(false);
+                        setNewName('');
+                        onSelectFunnel(result.funnel.id);
+                    }
+                } catch (error) {
+                    console.error('Erro ao criar funil:', error);
+                    alert('Erro ao criar funil');
+                }
             };
 
-            const deleteFunnel = (id, e) => {
+            const deleteFunnel = async (id, e) => {
                 e.stopPropagation();
                 if (confirm('Deletar este funil?')) {
-                    const updated = funnels.filter(f => f.id !== id);
-                    localStorage.setItem('funnels', JSON.stringify(updated));
-                    setFunnels(updated);
+                    try {
+                        const result = await apiDeleteFunnel(id);
+                        if (result && result.success) {
+                            setFunnels(funnels.filter(f => f.id !== id));
+                        }
+                    } catch (error) {
+                        console.error('Erro ao deletar funil:', error);
+                        alert('Erro ao deletar funil');
+                    }
                 }
             };
 
@@ -3943,9 +4213,20 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         function App() {
+            const [isAuthenticated, setIsAuthenticated] = React.useState(false);
             const [view, setView] = React.useState('dashboard');
             const [funnelId, setFunnelId] = React.useState(null);
             const [showSettings, setShowSettings] = React.useState(false);
+
+            // Verifica autenticação ao montar
+            React.useEffect(() => {
+                const token = localStorage.getItem('authToken');
+                setIsAuthenticated(!!token);
+            }, []);
+
+            const handleLogin = () => {
+                setIsAuthenticated(true);
+            };
 
             const selectFunnel = (id) => {
                 setFunnelId(id);
@@ -3956,6 +4237,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                 setView('dashboard');
                 setFunnelId(null);
             };
+
+            // Se não está autenticado, mostra tela de login
+            if (!isAuthenticated) {
+                return <LoginScreen onLogin={handleLogin} />;
+            }
 
             return (
                 <>
@@ -3976,14 +4262,225 @@ HTML_CONTENT = """<!DOCTYPE html>
 
 
 class FunnelBuilderHandler(BaseHTTPRequestHandler):
-    """Handler HTTP para servir a aplicação Funnel Builder"""
+    """Handler HTTP para servir a aplicação Funnel Builder e REST API"""
+
+    def _send_json(self, data, status=200):
+        """Envia resposta JSON"""
+        self.send_response(status)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode('utf-8'))
+
+    def _get_token(self):
+        """Extrai token do header Authorization"""
+        auth_header = self.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            return auth_header[7:]
+        return None
+
+    def _read_json_body(self):
+        """Lê e parse o corpo JSON da requisição"""
+        content_length = int(self.headers.get('Content-Length', 0))
+        if content_length > 0:
+            body = self.rfile.read(content_length)
+            return json.loads(body.decode('utf-8'))
+        return {}
+
+    def do_OPTIONS(self):
+        """Handle CORS preflight"""
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.end_headers()
 
     def do_GET(self):
-        """Responde a requisições GET com a página HTML"""
+        """Responde a requisições GET"""
+        # API: Listar funis do usuário
+        if self.path == '/api/funnels':
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            funnels = user.get_funnels()
+            self._send_json({
+                'funnels': [f.to_dict() for f in funnels]
+            })
+            return
+
+        # API: Buscar funil específico
+        if self.path.startswith('/api/funnels/'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            funnel_id = int(self.path.split('/')[-1])
+            funnel = Funnel.get_by_id(funnel_id, user.id)
+
+            if not funnel:
+                self._send_json({'error': 'Funil não encontrado'}, 404)
+                return
+
+            self._send_json({'funnel': funnel.to_dict()})
+            return
+
+        # Página HTML principal
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         self.wfile.write(HTML_CONTENT.encode('utf-8'))
+
+    def do_POST(self):
+        """Responde a requisições POST"""
+        # API: Registrar novo usuário
+        if self.path == '/api/register':
+            data = self._read_json_body()
+            result = auth.register(
+                email=data.get('email'),
+                password=data.get('password'),
+                name=data.get('name')
+            )
+
+            if result['success']:
+                self._send_json({
+                    'success': True,
+                    'message': result['message'],
+                    'token': result['token'],
+                    'user': result['user'].to_dict()
+                })
+            else:
+                self._send_json({
+                    'success': False,
+                    'message': result['message']
+                }, 400)
+            return
+
+        # API: Login
+        if self.path == '/api/login':
+            data = self._read_json_body()
+            result = auth.login(
+                email=data.get('email'),
+                password=data.get('password')
+            )
+
+            if result['success']:
+                self._send_json({
+                    'success': True,
+                    'message': result['message'],
+                    'token': result['token'],
+                    'user': result['user'].to_dict()
+                })
+            else:
+                self._send_json({
+                    'success': False,
+                    'message': result['message']
+                }, 401)
+            return
+
+        # API: Criar novo funil
+        if self.path == '/api/funnels':
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            data = self._read_json_body()
+            funnel = user.create_funnel(
+                name=data.get('name', 'Novo Funil'),
+                icon=data.get('icon', '🚀'),
+                elements=data.get('elements', []),
+                connections=data.get('connections', [])
+            )
+
+            self._send_json({
+                'success': True,
+                'funnel': funnel.to_dict()
+            }, 201)
+            return
+
+        self._send_json({'error': 'Endpoint não encontrado'}, 404)
+
+    def do_PUT(self):
+        """Responde a requisições PUT"""
+        # API: Atualizar funil
+        if self.path.startswith('/api/funnels/'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            funnel_id = int(self.path.split('/')[-1])
+            funnel = Funnel.get_by_id(funnel_id, user.id)
+
+            if not funnel:
+                self._send_json({'error': 'Funil não encontrado'}, 404)
+                return
+
+            data = self._read_json_body()
+            success = funnel.update(
+                name=data.get('name'),
+                icon=data.get('icon'),
+                elements=data.get('elements'),
+                connections=data.get('connections')
+            )
+
+            if success:
+                self._send_json({
+                    'success': True,
+                    'funnel': funnel.to_dict()
+                })
+            else:
+                self._send_json({'error': 'Erro ao atualizar funil'}, 500)
+            return
+
+        self._send_json({'error': 'Endpoint não encontrado'}, 404)
+
+    def do_DELETE(self):
+        """Responde a requisições DELETE"""
+        # API: Deletar funil
+        if self.path.startswith('/api/funnels/'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            funnel_id = int(self.path.split('/')[-1])
+            funnel = Funnel.get_by_id(funnel_id, user.id)
+
+            if not funnel:
+                self._send_json({'error': 'Funil não encontrado'}, 404)
+                return
+
+            success = funnel.delete()
+
+            if success:
+                self._send_json({'success': True, 'message': 'Funil deletado'})
+            else:
+                self._send_json({'error': 'Erro ao deletar funil'}, 500)
+            return
+
+        # API: Logout
+        if self.path == '/api/logout':
+            token = self._get_token()
+            if token:
+                auth.logout(token)
+            self._send_json({'success': True, 'message': 'Logout realizado'})
+            return
+
+        self._send_json({'error': 'Endpoint não encontrado'}, 404)
 
     def log_message(self, format, *args):
         """Sobrescreve o log padrão para mensagens customizadas"""
