@@ -3846,7 +3846,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             }
         ];
 
-        function FunnelDashboard({ onSelectFunnel, onCreateBlank, onOpenSettings }) {
+        function FunnelDashboard({ onSelectFunnel, onCreateBlank, onOpenSettings, onLogout }) {
             const [funnels, setFunnels] = React.useState([]);
             const [showNewModal, setShowNewModal] = React.useState(false);
             const [newName, setNewName] = React.useState('');
@@ -3933,31 +3933,57 @@ HTML_CONTENT = """<!DOCTYPE html>
 
             return (
                 <div style={{ minHeight: '100vh', maxHeight: '100vh', overflow: 'auto', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px', position: 'relative' }}>
-                    <button
-                        onClick={onOpenSettings}
-                        style={{
-                            position: 'fixed',
-                            top: '20px',
-                            right: '20px',
-                            zIndex: '1000',
-                            padding: '12px 20px',
-                            background: 'rgba(255,255,255,0.2)',
-                            border: '2px solid rgba(255,255,255,0.3)',
-                            borderRadius: '12px',
-                            color: 'white',
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                        onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
-                    >
-                        ⚙️ Configurações
-                    </button>
+                    <div style={{
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        zIndex: '1000',
+                        display: 'flex',
+                        gap: '12px'
+                    }}>
+                        <button
+                            onClick={onOpenSettings}
+                            style={{
+                                padding: '12px 20px',
+                                background: 'rgba(255,255,255,0.2)',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                            ⚙️ Configurações
+                        </button>
+                        <button
+                            onClick={onLogout}
+                            style={{
+                                padding: '12px 20px',
+                                background: 'rgba(239, 68, 68, 0.3)',
+                                border: '2px solid rgba(239, 68, 68, 0.5)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                            🚪 Sair
+                        </button>
+                    </div>
                     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                         <h1 style={{ color: 'white', fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center' }}>🚀 Meus Funis</h1>
                         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '18px', textAlign: 'center', marginBottom: '40px' }}>Escolha um template ou crie do zero</p>
@@ -4238,6 +4264,30 @@ HTML_CONTENT = """<!DOCTYPE html>
                 setFunnelId(null);
             };
 
+            const handleLogout = async () => {
+                const token = localStorage.getItem('authToken');
+
+                // Chama API de logout
+                if (token) {
+                    try {
+                        await apiCall('/api/logout', {
+                            method: 'DELETE'
+                        });
+                    } catch (error) {
+                        console.error('Erro ao fazer logout:', error);
+                    }
+                }
+
+                // Remove dados locais
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+
+                // Atualiza estado
+                setIsAuthenticated(false);
+                setView('dashboard');
+                setFunnelId(null);
+            };
+
             // Se não está autenticado, mostra tela de login
             if (!isAuthenticated) {
                 return <LoginScreen onLogin={handleLogin} />;
@@ -4247,7 +4297,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                 <>
                     {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
                     {view === 'dashboard' ? (
-                        <FunnelDashboard onSelectFunnel={selectFunnel} onOpenSettings={() => setShowSettings(true)} />
+                        <FunnelDashboard
+                            onSelectFunnel={selectFunnel}
+                            onOpenSettings={() => setShowSettings(true)}
+                            onLogout={handleLogout}
+                        />
                     ) : (
                         <FunnelBuilder funnelId={funnelId} onBack={backToDashboard} />
                     )}
