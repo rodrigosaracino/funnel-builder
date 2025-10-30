@@ -25,7 +25,9 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(git rm:*)",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(WEBHOOK_URL=\"https://n8n.amzcursos.com/webhook/funnel-builder-register\" python funnel_builder.py)",
+      "Bash(export WEBHOOK_URL=\"https://n8n.amzcursos.com/webhook/funnel-builder-register\")"
     ],
     "deny": [],
     "ask": []

@@ -43,9 +43,18 @@ class Database:
                 email TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 name TEXT,
+                whatsapp TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Adiciona coluna whatsapp se não existir (migração)
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN whatsapp TEXT')
+            print("✅ Coluna whatsapp adicionada à tabela users")
+        except sqlite3.OperationalError:
+            # Coluna já existe
+            pass
 
         # Tabela de funis
         cursor.execute('''
@@ -72,14 +81,14 @@ class Database:
 
     # ==================== OPERAÇÕES DE USUÁRIO ====================
 
-    def create_user(self, email: str, password_hash: str, name: str = None) -> Optional[int]:
+    def create_user(self, email: str, password_hash: str, name: str = None, whatsapp: str = None) -> Optional[int]:
         """Cria um novo usuário"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute(
-                'INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)',
-                (email, password_hash, name)
+                'INSERT INTO users (email, password_hash, name, whatsapp) VALUES (?, ?, ?, ?)',
+                (email, password_hash, name, whatsapp)
             )
             user_id = cursor.lastrowid
             conn.commit()
@@ -103,6 +112,7 @@ class Database:
                 'email': row['email'],
                 'password_hash': row['password_hash'],
                 'name': row['name'],
+                'whatsapp': row['whatsapp'] if 'whatsapp' in row.keys() else None,
                 'created_at': row['created_at']
             }
         return None
@@ -111,7 +121,7 @@ class Database:
         """Busca usuário por ID"""
         conn = self.get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, name, created_at FROM users WHERE id = ?', (user_id,))
+        cursor.execute('SELECT id, email, name, whatsapp, created_at FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         conn.close()
 
@@ -120,6 +130,7 @@ class Database:
                 'id': row['id'],
                 'email': row['email'],
                 'name': row['name'],
+                'whatsapp': row['whatsapp'] if 'whatsapp' in row.keys() else None,
                 'created_at': row['created_at']
             }
         return None

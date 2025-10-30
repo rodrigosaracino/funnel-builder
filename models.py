@@ -10,18 +10,19 @@ from database import db
 class User:
     """Classe que representa um usuário do sistema"""
 
-    def __init__(self, user_id: int, email: str, name: str = None, created_at: str = None):
+    def __init__(self, user_id: int, email: str, name: str = None, whatsapp: str = None, created_at: str = None):
         self.id = user_id
         self.email = email
         self.name = name
+        self.whatsapp = whatsapp
         self.created_at = created_at
 
     @staticmethod
-    def create(email: str, password_hash: str, name: str = None) -> Optional['User']:
+    def create(email: str, password_hash: str, name: str = None, whatsapp: str = None) -> Optional['User']:
         """Cria um novo usuário no banco"""
-        user_id = db.create_user(email, password_hash, name)
+        user_id = db.create_user(email, password_hash, name, whatsapp)
         if user_id:
-            return User(user_id, email, name)
+            return User(user_id, email, name, whatsapp)
         return None
 
     @staticmethod
@@ -33,6 +34,7 @@ class User:
                 user_id=user_data['id'],
                 email=user_data['email'],
                 name=user_data['name'],
+                whatsapp=user_data.get('whatsapp'),
                 created_at=user_data['created_at']
             )
         return None
@@ -46,6 +48,7 @@ class User:
                 user_id=user_data['id'],
                 email=user_data['email'],
                 name=user_data['name'],
+                whatsapp=user_data.get('whatsapp'),
                 created_at=user_data['created_at']
             )
         return None
@@ -67,6 +70,7 @@ class User:
             'id': self.id,
             'email': self.email,
             'name': self.name,
+            'whatsapp': self.whatsapp,
             'created_at': self.created_at
         }
 

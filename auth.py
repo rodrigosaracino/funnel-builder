@@ -37,7 +37,7 @@ class Auth:
         """Gera um token seguro para sessão"""
         return secrets.token_urlsafe(32)
 
-    def register(self, email: str, password: str, name: str = None) -> Dict:
+    def register(self, email: str, password: str, name: str = None, whatsapp: str = None) -> Dict:
         """
         Registra um novo usuário
 
@@ -61,6 +61,15 @@ class Auth:
                 'token': None
             }
 
+        # Valida WhatsApp (obrigatório)
+        if not whatsapp or len(whatsapp.strip()) == 0:
+            return {
+                'success': False,
+                'message': 'WhatsApp é obrigatório',
+                'user': None,
+                'token': None
+            }
+
         # Verifica se email já existe
         existing_user = User.get_by_email(email)
         if existing_user:
@@ -73,7 +82,7 @@ class Auth:
 
         # Cria o usuário
         password_hash = self.hash_password(password)
-        user = User.create(email, password_hash, name)
+        user = User.create(email, password_hash, name, whatsapp)
 
         if not user:
             return {
@@ -133,6 +142,7 @@ class Auth:
             user_id=user_data['id'],
             email=user_data['email'],
             name=user_data['name'],
+            whatsapp=user_data.get('whatsapp'),
             created_at=user_data['created_at']
         )
 

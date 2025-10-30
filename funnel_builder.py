@@ -1424,6 +1424,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [name, setName] = useState('');
+            const [whatsapp, setWhatsapp] = useState('');
             const [isRegister, setIsRegister] = useState(false);
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
@@ -1436,7 +1437,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 try {
                     const endpoint = isRegister ? '/api/register' : '/api/login';
                     const body = isRegister
-                        ? { email, password, name }
+                        ? { email, password, name, whatsapp }
                         : { email, password };
 
                     const response = await fetch(endpoint, {
@@ -1490,17 +1491,34 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                         <form className="login-form" onSubmit={handleSubmit}>
                             {isRegister && (
-                                <div className="login-input-group">
-                                    <label className="login-label" htmlFor="name">Nome</label>
-                                    <input
-                                        id="name"
-                                        type="text"
-                                        className="login-input"
-                                        placeholder="Seu nome completo"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                    />
-                                </div>
+                                <>
+                                    <div className="login-input-group">
+                                        <label className="login-label" htmlFor="name">Nome</label>
+                                        <input
+                                            id="name"
+                                            type="text"
+                                            className="login-input"
+                                            placeholder="Seu nome completo"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="login-input-group">
+                                        <label className="login-label" htmlFor="whatsapp">WhatsApp</label>
+                                        <input
+                                            id="whatsapp"
+                                            type="tel"
+                                            className="login-input"
+                                            placeholder="(11) 99999-9999"
+                                            value={whatsapp}
+                                            onChange={(e) => setWhatsapp(e.target.value)}
+                                            required
+                                        />
+                                        <small style={{ color: '#666', fontSize: '12px', marginTop: '4px' }}>
+                                            Formato: (DD) 9XXXX-XXXX
+                                        </small>
+                                    </div>
+                                </>
                             )}
                             <div className="login-input-group">
                                 <label className="login-label" htmlFor="email">Email</label>
@@ -4411,7 +4429,8 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
             result = auth.register(
                 email=data.get('email'),
                 password=data.get('password'),
-                name=data.get('name')
+                name=data.get('name'),
+                whatsapp=data.get('whatsapp')
             )
 
             if result['success']:
