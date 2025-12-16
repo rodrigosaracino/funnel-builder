@@ -13,7 +13,25 @@ import urllib.parse
 from auth import auth
 from models import User, Funnel
 from webhooks import webhook_manager
+from rate_limiter import rate_limiter
+from security_logger import security_logger
 import os
+
+# ==================== CONFIGURAÇÕES DE SEGURANÇA ====================
+
+# Limite máximo de payload (10MB)
+MAX_PAYLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# CORS: Domínios permitidos (ajustar para produção)
+ALLOWED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    # Adicionar domínios de produção aqui:
+    # 'https://funnel-builder.seudominio.com',
+    # 'https://app.seudominio.com'
+]
+
+# ====================================================================
 
 HTML_CONTENT = """<!DOCTYPE html>
 <html lang="pt-BR">
@@ -4348,11 +4366,69 @@ else:
 class FunnelBuilderHandler(BaseHTTPRequestHandler):
     """Handler HTTP para servir a aplicação Funnel Builder e REST API"""
 
+    def _get_client_ip(self):
+        """Obtém IP real do cliente (considera proxies)"""
+        # Verifica header de proxy reverso
+        forwarded = self.headers.get('X-Forwarded-For')
+        if forwarded:
+            # Pega o primeiro IP da lista
+            return forwarded.split(',')[0].strip()
+
+        # Verifica outros headers de proxy
+        real_ip = self.headers.get('X-Real-IP')
+        if real_ip:
+            return real_ip.strip()
+
+        # Fallback para IP direto
+        return self.client_address[0]
+
+    def _send_security_headers(self):
+        """Adiciona headers de segurança"""
+        # Previne clickjacking
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+
+        # Previne MIME sniffing
+        self.send_header('X-Content-Type-Options', 'nosniff')
+
+        # XSS Protection (legacy, mas ainda útil)
+        self.send_header('X-XSS-Protection', '1; mode=block')
+
+        # Content Security Policy
+        csp_directives = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data:",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "frame-ancestors 'none'"
+        ]
+        self.send_header('Content-Security-Policy', '; '.join(csp_directives))
+
+        # Referrer Policy
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+
+    def _send_cors_headers(self):
+        """Envia headers CORS restritos"""
+        origin = self.headers.get('Origin', '')
+
+        # Valida origem
+        if origin in ALLOWED_ORIGINS:
+            self.send_header('Access-Control-Allow-Origin', origin)
+        else:
+            # Fallback para localhost em desenvolvimento
+            self.send_header('Access-Control-Allow-Origin', ALLOWED_ORIGINS[0])
+
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('Access-Control-Max-Age', '86400')  # Cache preflight por 24h
+
     def _send_json(self, data, status=200):
-        """Envia resposta JSON"""
+        """Envia resposta JSON com headers de segurança"""
         self.send_response(status)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Content-type', 'application/json; charset=utf-8')
+        self._send_cors_headers()
+        self._send_security_headers()
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 
@@ -4364,20 +4440,40 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
         return None
 
     def _read_json_body(self):
-        """Lê e parse o corpo JSON da requisição"""
+        """Lê e parse o corpo JSON da requisição com validações"""
         content_length = int(self.headers.get('Content-Length', 0))
+
+        # Verifica tamanho do payload
+        if content_length > MAX_PAYLOAD_SIZE:
+            client_ip = self._get_client_ip()
+            security_logger.log_payload_too_large(
+                ip=client_ip,
+                size_bytes=content_length,
+                max_size=MAX_PAYLOAD_SIZE
+            )
+            raise ValueError(f'Payload muito grande. Máximo: {MAX_PAYLOAD_SIZE // (1024*1024)}MB')
+
         if content_length > 0:
             body = self.rfile.read(content_length)
-            return json.loads(body.decode('utf-8'))
+            try:
+                return json.loads(body.decode('utf-8'))
+            except json.JSONDecodeError as e:
+                raise ValueError(f'JSON inválido: {str(e)}')
+
         return {}
 
     def do_OPTIONS(self):
         """Handle CORS preflight"""
         self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self._send_cors_headers()
+        self._send_security_headers()
         self.end_headers()
+
+    def log_message(self, format, *args):
+        """Sobrescreve log padrão para formato mais limpo"""
+        # Log apenas em desenvolvimento ou para erros
+        if args[1] not in ['200', '201', '204']:
+            print(f"[Funnel Builder] {format % args}")
 
     def do_GET(self):
         """Responde a requisições GET"""
@@ -4423,79 +4519,186 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Responde a requisições POST"""
-        # API: Registrar novo usuário
-        if self.path == '/api/register':
-            data = self._read_json_body()
-            result = auth.register(
-                email=data.get('email'),
-                password=data.get('password'),
-                name=data.get('name'),
-                whatsapp=data.get('whatsapp')
-            )
+        client_ip = self._get_client_ip()
+        user_agent = self.headers.get('User-Agent', '')
 
-            if result['success']:
-                # Envia webhook de novo usuário registrado
-                webhook_manager.on_user_registered(result['user'].to_dict())
+        try:
+            # API: Registrar novo usuário
+            if self.path == '/api/register':
+                # Rate limiting: 3 tentativas de registro por 10 minutos
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'register')
+                if not allowed:
+                    security_logger.log_rate_limit_exceeded(client_ip, 'register', retry_after)
+                    self._send_json({
+                        'error': f'Muitas tentativas de registro. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
 
-                self._send_json({
-                    'success': True,
-                    'message': result['message'],
-                    'token': result['token'],
-                    'user': result['user'].to_dict()
-                })
-            else:
-                self._send_json({
-                    'success': False,
-                    'message': result['message']
-                }, 400)
-            return
+                data = self._read_json_body()
+                email = data.get('email', '')
 
-        # API: Login
-        if self.path == '/api/login':
-            data = self._read_json_body()
-            result = auth.login(
-                email=data.get('email'),
-                password=data.get('password')
-            )
+                result = auth.register(
+                    email=email,
+                    password=data.get('password'),
+                    name=data.get('name'),
+                    whatsapp=data.get('whatsapp')
+                )
 
-            if result['success']:
-                self._send_json({
-                    'success': True,
-                    'message': result['message'],
-                    'token': result['token'],
-                    'user': result['user'].to_dict()
-                })
-            else:
-                self._send_json({
-                    'success': False,
-                    'message': result['message']
-                }, 401)
-            return
+                if result['success']:
+                    # Log sucesso
+                    security_logger.log_registration(
+                        user_id=result['user'].id,
+                        email=email,
+                        ip=client_ip
+                    )
 
-        # API: Criar novo funil
-        if self.path == '/api/funnels':
-            token = self._get_token()
-            user = auth.get_user_from_token(token)
+                    # Reseta rate limit após sucesso
+                    rate_limiter.reset(client_ip, 'register')
 
-            if not user:
-                self._send_json({'error': 'Não autenticado'}, 401)
+                    # Envia webhook de novo usuário registrado
+                    webhook_manager.on_user_registered(result['user'].to_dict())
+
+                    self._send_json({
+                        'success': True,
+                        'message': result['message'],
+                        'token': result['token'],
+                        'user': result['user'].to_dict()
+                    })
+                else:
+                    # Log falha
+                    security_logger.log_registration_failure(
+                        email=email,
+                        ip=client_ip,
+                        reason=result['message']
+                    )
+
+                    self._send_json({
+                        'success': False,
+                        'message': result['message']
+                    }, 400)
                 return
 
-            data = self._read_json_body()
-            funnel = user.create_funnel(
-                name=data.get('name', 'Novo Funil'),
-                icon=data.get('icon', '🚀'),
-                elements=data.get('elements', []),
-                connections=data.get('connections', [])
+            # API: Login
+            if self.path == '/api/login':
+                # Rate limiting: 5 tentativas de login por 5 minutos
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'login')
+                if not allowed:
+                    security_logger.log_rate_limit_exceeded(client_ip, 'login', retry_after)
+                    self._send_json({
+                        'error': f'Muitas tentativas de login. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                data = self._read_json_body()
+                email = data.get('email', '')
+
+                # Log tentativa
+                security_logger.log_login_attempt(email, client_ip, user_agent)
+
+                result = auth.login(
+                    email=email,
+                    password=data.get('password')
+                )
+
+                if result['success']:
+                    # Log sucesso
+                    security_logger.log_login_success(
+                        user_id=result['user'].id,
+                        email=email,
+                        ip=client_ip
+                    )
+
+                    # Reseta rate limit após sucesso
+                    rate_limiter.reset(client_ip, 'login')
+
+                    self._send_json({
+                        'success': True,
+                        'message': result['message'],
+                        'token': result['token'],
+                        'user': result['user'].to_dict()
+                    })
+                else:
+                    # Log falha
+                    security_logger.log_login_failure(
+                        email=email,
+                        ip=client_ip,
+                        reason=result['message']
+                    )
+
+                    # Detecta possível brute force
+                    failed_count = security_logger.get_failed_logins_by_ip(client_ip, minutes=10)
+                    if failed_count >= 10:
+                        security_logger.log_brute_force_attempt(client_ip, email, failed_count)
+
+                    self._send_json({
+                        'success': False,
+                        'message': result['message']
+                    }, 401)
+                return
+
+            # API: Criar novo funil
+            if self.path == '/api/funnels':
+                # Rate limiting para operações de escrita
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    security_logger.log_rate_limit_exceeded(client_ip, 'api_write', retry_after)
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    security_logger.log_invalid_token(token or 'none', client_ip)
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                data = self._read_json_body()
+                funnel = user.create_funnel(
+                    name=data.get('name', 'Novo Funil'),
+                    icon=data.get('icon', '🚀'),
+                    elements=data.get('elements', []),
+                    connections=data.get('connections', [])
+                )
+
+                # Log operação
+                security_logger.log_funnel_created(
+                    user_id=user.id,
+                    funnel_id=funnel.id,
+                    ip=client_ip
+                )
+
+                self._send_json({
+                    'success': True,
+                    'funnel': funnel.to_dict()
+                }, 201)
+                return
+
+            self._send_json({'error': 'Endpoint não encontrado'}, 404)
+
+        except ValueError as e:
+            # Erro de validação (payload, JSON, etc)
+            security_logger.log_api_error(
+                endpoint=self.path,
+                method='POST',
+                ip=client_ip,
+                error=str(e),
+                status_code=400
             )
+            self._send_json({'error': str(e)}, 400)
 
-            self._send_json({
-                'success': True,
-                'funnel': funnel.to_dict()
-            }, 201)
-            return
-
-        self._send_json({'error': 'Endpoint não encontrado'}, 404)
+        except Exception as e:
+            # Erro inesperado
+            security_logger.log_api_error(
+                endpoint=self.path,
+                method='POST',
+                ip=client_ip,
+                error=str(e),
+                status_code=500
+            )
+            self._send_json({'error': 'Erro interno do servidor'}, 500)
 
     def do_PUT(self):
         """Responde a requisições PUT"""
@@ -4536,43 +4739,77 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         """Responde a requisições DELETE"""
-        # API: Deletar funil
-        if self.path.startswith('/api/funnels/'):
-            token = self._get_token()
-            user = auth.get_user_from_token(token)
+        client_ip = self._get_client_ip()
 
-            if not user:
-                self._send_json({'error': 'Não autenticado'}, 401)
+        try:
+            # API: Deletar funil
+            if self.path.startswith('/api/funnels/'):
+                # Rate limiting
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    security_logger.log_rate_limit_exceeded(client_ip, 'api_write', retry_after)
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    security_logger.log_invalid_token(token or 'none', client_ip)
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                funnel_id = int(self.path.split('/')[-1])
+                funnel = Funnel.get_by_id(funnel_id, user.id)
+
+                if not funnel:
+                    security_logger.log_unauthorized_access(
+                        user_id=user.id,
+                        resource=f'funnel:{funnel_id}',
+                        ip=client_ip
+                    )
+                    self._send_json({'error': 'Funil não encontrado'}, 404)
+                    return
+
+                success = funnel.delete()
+
+                if success:
+                    # Log operação
+                    security_logger.log_funnel_deleted(
+                        user_id=user.id,
+                        funnel_id=funnel_id,
+                        ip=client_ip
+                    )
+                    self._send_json({'success': True, 'message': 'Funil deletado'})
+                else:
+                    self._send_json({'error': 'Erro ao deletar funil'}, 500)
                 return
 
-            funnel_id = int(self.path.split('/')[-1])
-            funnel = Funnel.get_by_id(funnel_id, user.id)
+            # API: Logout
+            if self.path == '/api/logout':
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
 
-            if not funnel:
-                self._send_json({'error': 'Funil não encontrado'}, 404)
+                if token and user:
+                    auth.logout(token)
+                    security_logger.log_logout(user.id, client_ip)
+
+                self._send_json({'success': True, 'message': 'Logout realizado'})
                 return
 
-            success = funnel.delete()
+            self._send_json({'error': 'Endpoint não encontrado'}, 404)
 
-            if success:
-                self._send_json({'success': True, 'message': 'Funil deletado'})
-            else:
-                self._send_json({'error': 'Erro ao deletar funil'}, 500)
-            return
-
-        # API: Logout
-        if self.path == '/api/logout':
-            token = self._get_token()
-            if token:
-                auth.logout(token)
-            self._send_json({'success': True, 'message': 'Logout realizado'})
-            return
-
-        self._send_json({'error': 'Endpoint não encontrado'}, 404)
-
-    def log_message(self, format, *args):
-        """Sobrescreve o log padrão para mensagens customizadas"""
-        print(f"[Funnel Builder] {format % args}")
+        except Exception as e:
+            security_logger.log_api_error(
+                endpoint=self.path,
+                method='DELETE',
+                ip=client_ip,
+                error=str(e),
+                status_code=500
+            )
+            self._send_json({'error': 'Erro interno do servidor'}, 500)
 
 
 def open_browser(port):
@@ -4582,16 +4819,38 @@ def open_browser(port):
     webbrowser.open(f'http://localhost:{port}')
 
 
+def cleanup_task():
+    """Task periódica para limpar rate limiter e sessões expiradas"""
+    import time
+    while True:
+        time.sleep(300)  # A cada 5 minutos
+        try:
+            rate_limiter.cleanup_old_entries()
+            auth.cleanup_expired_sessions()
+        except Exception as e:
+            print(f"⚠️ Erro no cleanup: {e}")
+
+
 def run_server(port=8000):
     """Inicia o servidor HTTP"""
     server_address = ('', port)
     httpd = HTTPServer(server_address, FunnelBuilderHandler)
+
+    # Log de início do servidor
+    security_logger.log_server_start(port)
 
     print("=" * 70)
     print("🚀 FUNNEL BUILDER - Sistema de Construção de Funis")
     print("=" * 70)
     print(f"\n✅ Servidor iniciado com sucesso!")
     print(f"🌐 Acesse: http://localhost:{port}")
+    print(f"\n🔒 Proteções de Segurança Ativas:")
+    print("   ✓ Rate Limiting (brute force protection)")
+    print("   ✓ CORS Restrito")
+    print("   ✓ Senhas Fortes Obrigatórias")
+    print("   ✓ Headers de Segurança (CSP, X-Frame-Options)")
+    print("   ✓ Validação de Inputs")
+    print("   ✓ Logs de Auditoria")
     print(f"\n📖 Como usar:")
     print("   1. Arraste elementos da barra lateral para o canvas")
     print("   2. Clique no botão 🔗 para conectar elementos")
@@ -4599,6 +4858,11 @@ def run_server(port=8000):
     print("   4. Use o botão 🗑️ para deletar elementos")
     print(f"\n⚠️  Pressione Ctrl+C para parar o servidor\n")
     print("=" * 70)
+
+    # Inicia thread de cleanup
+    cleanup_thread = threading.Thread(target=cleanup_task)
+    cleanup_thread.daemon = True
+    cleanup_thread.start()
 
     # Abre o navegador em uma thread separada
     browser_thread = threading.Thread(target=open_browser, args=(port,))
@@ -4609,6 +4873,7 @@ def run_server(port=8000):
         httpd.serve_forever()
     except KeyboardInterrupt:
         print("\n\n🛑 Servidor encerrado pelo usuário")
+        security_logger.log_server_stop()
         httpd.server_close()
 
 

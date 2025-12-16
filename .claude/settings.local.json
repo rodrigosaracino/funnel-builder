@@ -27,7 +27,13 @@
       "Bash(git rm:*)",
       "Bash(docker-compose up:*)",
       "Bash(WEBHOOK_URL=\"https://n8n.amzcursos.com/webhook/funnel-builder-register\" python funnel_builder.py)",
-      "Bash(export WEBHOOK_URL=\"https://n8n.amzcursos.com/webhook/funnel-builder-register\")"
+      "Bash(export WEBHOOK_URL=\"https://n8n.amzcursos.com/webhook/funnel-builder-register\")",
+      "Bash(open:*)",
+      "Bash(docker info:*)",
+      "Bash(/dev/null)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose down:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,6 +9,7 @@ import time
 from typing import Optional, Dict
 from models import User
 from database import db
+from validators import validate_email, validate_password, validate_whatsapp, validate_name, sanitize_input
 
 
 class Auth:
@@ -53,22 +54,50 @@ class Auth:
                 'token': None
             }
 
-        if len(password) < 6:
+        # Valida formato de email
+        is_valid, error_msg = validate_email(email)
+        if not is_valid:
             return {
                 'success': False,
-                'message': 'Senha deve ter no mínimo 6 caracteres',
+                'message': error_msg,
+                'user': None,
+                'token': None
+            }
+
+        # Normaliza email (lowercase, trim)
+        email = email.lower().strip()
+
+        # Valida força da senha
+        is_valid, error_msg = validate_password(password)
+        if not is_valid:
+            return {
+                'success': False,
+                'message': error_msg,
                 'user': None,
                 'token': None
             }
 
         # Valida WhatsApp (obrigatório)
-        if not whatsapp or len(whatsapp.strip()) == 0:
+        is_valid, error_msg = validate_whatsapp(whatsapp)
+        if not is_valid:
             return {
                 'success': False,
-                'message': 'WhatsApp é obrigatório',
+                'message': error_msg,
                 'user': None,
                 'token': None
             }
+
+        # Valida e sanitiza nome (opcional)
+        if name:
+            is_valid, error_msg = validate_name(name)
+            if not is_valid:
+                return {
+                    'success': False,
+                    'message': error_msg,
+                    'user': None,
+                    'token': None
+                }
+            name = sanitize_input(name, max_length=100)
 
         # Verifica se email já existe
         existing_user = User.get_by_email(email)
