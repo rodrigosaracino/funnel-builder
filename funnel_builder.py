@@ -74,12 +74,20 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .dashboard {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 16px 32px;
             display: flex;
-            justify-content: space-around;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            gap: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+            z-index: 1000;
         }
 
         .metric {
@@ -87,36 +95,38 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .metric-label {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
 
         .metric-value {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 24px;
+            font-weight: 700;
+            color: #0F172A;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .metric-status {
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .metric-positive {
-            color: #48bb78;
+            color: #10B981;
         }
 
         .metric-negative {
-            color: #f56565;
+            color: #EF4444;
         }
 
         .metric-neutral {
-            color: #ecc94b;
+            color: #F59E0B;
         }
 
         .main-content {
@@ -131,6 +141,14 @@ HTML_CONTENT = """<!DOCTYPE html>
             border-right: 1px solid #e2e8f0;
             padding: 20px;
             overflow-y: auto;
+            overflow-x: hidden;
+            transition: width 0.3s ease, padding 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+            padding: 20px 10px;
         }
 
         .sidebar h3 {
@@ -138,6 +156,37 @@ HTML_CONTENT = """<!DOCTYPE html>
             color: #2d3748;
             font-size: 18px;
             font-weight: 700;
+            transition: opacity 0.2s ease;
+        }
+
+        .sidebar.collapsed h3 {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            right: -12px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #64748B;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .sidebar-toggle:hover {
+            background: #F8FAFC;
+            color: #334155;
+            transform: scale(1.1);
         }
 
         .element-library {
@@ -190,6 +239,15 @@ HTML_CONTENT = """<!DOCTYPE html>
             overflow: hidden;
         }
 
+        .sidebar.collapsed .library-element {
+            padding: 8px;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .library-element span:not(.element-icon) {
+            display: none;
+        }
+
         .library-element::before {
             content: '';
             position: absolute;
@@ -224,11 +282,10 @@ HTML_CONTENT = """<!DOCTYPE html>
             flex: 1;
             position: relative;
             overflow: hidden;
-            background-color: #f8fafc;
-            background-image:
-                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-color: #F8FAFC;
+            background-image: radial-gradient(circle, #E2E8F0 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
         }
 
         .canvas {
@@ -398,22 +455,24 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .funnel-element {
             position: absolute;
-            width: 220px;
-            padding: 15px;
+            width: 200px;
             border-radius: 12px;
             cursor: move;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            transition: box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+            border: 1px solid #E2E8F0;
+            transition: all 0.2s ease;
+            background: white;
+            overflow: hidden;
         }
 
         .funnel-element:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
             transform: translateY(-2px);
         }
 
         .funnel-element.selected {
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+            border-color: #4299e1;
         }
 
         .funnel-element.dragging {
@@ -424,57 +483,86 @@ HTML_CONTENT = """<!DOCTYPE html>
         .element-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            padding: 10px 12px;
             color: white;
+            position: relative;
         }
 
         .element-title {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .element-actions {
             display: flex;
-            gap: 5px;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .funnel-element:hover .element-actions {
+            opacity: 1;
         }
 
         .element-btn {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border: none;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.25);
             border-radius: 4px;
             cursor: pointer;
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
         .element-btn:hover {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
         }
 
         .element-metrics {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            padding: 8px;
+            background: white;
+            padding: 12px;
             font-size: 11px;
-            color: white;
+            color: #334155;
         }
 
         .metric-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #F1F5F9;
         }
 
         .metric-row:last-child {
             margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .metric-row .label {
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-row .value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0F172A;
         }
 
         .connection-point {
@@ -572,18 +660,18 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .connection-line {
-            stroke: #4299e1;
-            stroke-width: 3;
+            stroke: #94A3B8;
+            stroke-width: 2;
             fill: none;
             marker-end: url(#arrowhead);
             cursor: pointer;
             pointer-events: stroke;
-            transition: stroke-width 0.2s;
+            transition: all 0.2s ease;
         }
 
         .connection-line:hover {
-            stroke: #2c5282;
-            stroke-width: 5;
+            stroke: #64748B;
+            stroke-width: 3;
         }
 
         .connection-line.selected {
@@ -611,6 +699,12 @@ HTML_CONTENT = """<!DOCTYPE html>
             border-left: 1px solid #e2e8f0;
             padding: 20px;
             overflow-y: auto;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .properties-panel.hidden {
+            transform: translateX(100%);
         }
 
         .properties-panel h3 {
@@ -1865,6 +1959,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
             const [isPanning, setIsPanning] = useState(false);
             const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+            const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
             const canvasRef = useRef(null);
 
             const calculateMetrics = () => {
@@ -3014,7 +3109,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                             </div>
                         )}
 
-                        <div className="sidebar">
+                        <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                            <div className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+                                {sidebarCollapsed ? '→' : '←'}
+                            </div>
                             <h3>📦 Elementos do Funil</h3>
                             <div className="element-library">
                                 {ELEMENT_CATEGORIES.map((category, idx) => (
@@ -3070,7 +3168,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         refY="3"
                                         orient="auto"
                                     >
-                                        <polygon points="0 0, 10 3, 0 6" fill="#4299e1" />
+                                        <polygon points="0 0, 10 3, 0 6" fill="#94A3B8" />
                                     </marker>
                                 </defs>
                                 <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
@@ -3312,7 +3410,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                             )}
                         </div>
 
-                        <div className="properties-panel">
+                        <div className={`properties-panel ${!selectedElementData ? 'hidden' : ''}`}>
                             <h3>Propriedades</h3>
                             {selectedElementData ? (
                                 <div>
