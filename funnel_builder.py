@@ -1735,6 +1735,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             }, [elements, connections, funnelId]);
 
             const [saveSuccess, setSaveSuccess] = useState(false);
+            const [showBottleneckAnalysis, setShowBottleneckAnalysis] = useState(false);
 
             const saveFunnel = async () => {
                 if (saving) return;
@@ -2120,6 +2121,47 @@ HTML_CONTENT = """<!DOCTYPE html>
                     investment: totalInvestment,
                     visitors: totalVisitors
                 };
+            };
+
+            // Análise de Gargalos - identifica onde o funil perde mais pessoas
+            const analyzeBottlenecks = () => {
+                const metrics = calculateMetrics();
+                const bottlenecks = [];
+
+                // Para cada conexão, calcula a taxa de dropout
+                connections.forEach(conn => {
+                    const fromElement = elements.find(el => el.id === conn.from);
+                    const toElement = elements.find(el => el.id === conn.to);
+
+                    if (fromElement && toElement && metrics[fromElement.id] && metrics[toElement.id]) {
+                        const fromVisitors = metrics[fromElement.id].calculatedMetrics?.visitors || 0;
+                        const toVisitors = metrics[toElement.id].calculatedMetrics?.visitors || 0;
+
+                        if (fromVisitors > 0) {
+                            const dropoutRate = ((fromVisitors - toVisitors) / fromVisitors) * 100;
+                            const dropoutCount = fromVisitors - toVisitors;
+
+                            if (dropoutRate > 0) {
+                                bottlenecks.push({
+                                    fromId: fromElement.id,
+                                    toId: toElement.id,
+                                    fromName: fromElement.name,
+                                    toName: toElement.name,
+                                    fromVisitors: fromVisitors,
+                                    toVisitors: toVisitors,
+                                    dropoutCount: dropoutCount,
+                                    dropoutRate: dropoutRate,
+                                    conversionRate: 100 - dropoutRate
+                                });
+                            }
+                        }
+                    }
+                });
+
+                // Ordena por taxa de dropout (maior primeiro)
+                bottlenecks.sort((a, b) => b.dropoutRate - a.dropoutRate);
+
+                return bottlenecks;
             };
 
             const handleDragFromLibrary = (e, elementType) => {
@@ -2659,6 +2701,23 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 </button>
                             )}
                             <button
+                                onClick={() => setShowBottleneckAnalysis(!showBottleneckAnalysis)}
+                                style={{
+                                    padding: '10px 20px',
+                                    backgroundColor: showBottleneckAnalysis ? '#ef4444' : '#10b981',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                {showBottleneckAnalysis ? '✕ Fechar Análise' : '🔍 Análise de Gargalos'}
+                            </button>
+                            <button
                                 onClick={() => saveFunnel()}
                                 disabled={saving}
                                 style={{
@@ -2720,6 +2779,151 @@ HTML_CONTENT = """<!DOCTYPE html>
                     </div>
 
                     <div className="main-content">
+                        {/* Painel de Análise de Gargalos */}
+                        {showBottleneckAnalysis && (
+                            <div style={{
+                                position: 'fixed',
+                                top: '80px',
+                                right: '20px',
+                                width: '400px',
+                                maxHeight: '80vh',
+                                overflowY: 'auto',
+                                background: 'white',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                                zIndex: 1000,
+                                padding: '20px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>🔍 Análise de Gargalos</h3>
+                                    <button
+                                        onClick={() => setShowBottleneckAnalysis(false)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            fontSize: '24px',
+                                            cursor: 'pointer',
+                                            color: '#9ca3af'
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                {(() => {
+                                    const bottlenecks = analyzeBottlenecks();
+
+                                    if (bottlenecks.length === 0) {
+                                        return (
+                                            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#9ca3af' }}>
+                                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
+                                                <p>Adicione conexões entre elementos para ver a análise de gargalos</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    const worstBottleneck = bottlenecks[0];
+
+                                    return (
+                                        <div>
+                                            {/* Maior Gargalo */}
+                                            <div style={{
+                                                background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                                                border: '2px solid #ef4444',
+                                                borderRadius: '12px',
+                                                padding: '16px',
+                                                marginBottom: '20px'
+                                            }}>
+                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', marginBottom: '8px' }}>
+                                                    🚨 MAIOR GARGALO
+                                                </div>
+                                                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                                                    {worstBottleneck.fromName} → {worstBottleneck.toName}
+                                                </div>
+                                                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#dc2626', marginBottom: '8px' }}>
+                                                    {worstBottleneck.dropoutRate.toFixed(1)}%
+                                                </div>
+                                                <div style={{ fontSize: '13px', color: '#7f1d1d' }}>
+                                                    {worstBottleneck.dropoutCount.toLocaleString('pt-BR')} pessoas abandonam aqui
+                                                </div>
+                                            </div>
+
+                                            {/* Lista de Gargalos */}
+                                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563', marginBottom: '12px' }}>
+                                                Todas as etapas:
+                                            </div>
+
+                                            {bottlenecks.map((bottleneck, index) => (
+                                                <div
+                                                    key={index}
+                                                    style={{
+                                                        background: index === 0 ? '#fef2f2' : '#f9fafb',
+                                                        border: `2px solid ${index === 0 ? '#fca5a5' : '#e5e7eb'}`,
+                                                        borderRadius: '8px',
+                                                        padding: '12px',
+                                                        marginBottom: '12px'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#1f2937' }}>
+                                                            {bottleneck.fromName} → {bottleneck.toName}
+                                                        </div>
+                                                        <div style={{
+                                                            fontSize: '16px',
+                                                            fontWeight: 'bold',
+                                                            color: bottleneck.dropoutRate > 70 ? '#dc2626' : bottleneck.dropoutRate > 50 ? '#f59e0b' : '#10b981'
+                                                        }}>
+                                                            {bottleneck.dropoutRate.toFixed(1)}%
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                                                        {bottleneck.fromVisitors.toLocaleString('pt-BR')} pessoas → {bottleneck.toVisitors.toLocaleString('pt-BR')} pessoas
+                                                    </div>
+
+                                                    {/* Barra de progresso */}
+                                                    <div style={{
+                                                        width: '100%',
+                                                        height: '8px',
+                                                        background: '#e5e7eb',
+                                                        borderRadius: '4px',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            width: `${bottleneck.conversionRate}%`,
+                                                            height: '100%',
+                                                            background: bottleneck.dropoutRate > 70 ? '#dc2626' : bottleneck.dropoutRate > 50 ? '#f59e0b' : '#10b981',
+                                                            transition: 'width 0.3s'
+                                                        }} />
+                                                    </div>
+
+                                                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                                                        Taxa de conversão: {bottleneck.conversionRate.toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {/* Sugestões */}
+                                            <div style={{
+                                                background: '#dbeafe',
+                                                border: '2px solid #3b82f6',
+                                                borderRadius: '8px',
+                                                padding: '12px',
+                                                marginTop: '20px'
+                                            }}>
+                                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e40af', marginBottom: '8px' }}>
+                                                    💡 Dica de Otimização
+                                                </div>
+                                                <div style={{ fontSize: '12px', color: '#1e3a8a' }}>
+                                                    Foque em melhorar o maior gargalo primeiro. Uma melhoria de 10% nesta etapa pode aumentar significativamente o resultado final do funil.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
                         <div className="sidebar">
                             <h3>📦 Elementos do Funil</h3>
                             <div className="element-library">
