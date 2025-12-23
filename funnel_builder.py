@@ -3891,7 +3891,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             }
         ];
 
-        function FunnelDashboard({ onSelectFunnel, onCreateBlank, onOpenSettings, onLogout }) {
+        function FunnelDashboard({ onSelectFunnel, onCreateBlank, onOpenSettings, onGoToMarketing, onLogout }) {
             const [funnels, setFunnels] = React.useState([]);
             const [showNewModal, setShowNewModal] = React.useState(false);
             const [newName, setNewName] = React.useState('');
@@ -3986,6 +3986,27 @@ HTML_CONTENT = """<!DOCTYPE html>
                         display: 'flex',
                         gap: '12px'
                     }}>
+                        <button
+                            onClick={onGoToMarketing}
+                            style={{
+                                padding: '12px 20px',
+                                background: 'rgba(255,255,255,0.2)',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.3)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                            📊 Marketing
+                        </button>
                         <button
                             onClick={onOpenSettings}
                             style={{
@@ -4283,6 +4304,735 @@ HTML_CONTENT = """<!DOCTYPE html>
             );
         }
 
+        // ==================== MARKETING MANAGER ====================
+
+        function MarketingManager({ onBack }) {
+            const [activeTab, setActiveTab] = useState('pages');
+            const [pages, setPages] = useState([]);
+            const [utms, setUtms] = useState([]);
+            const [showPageModal, setShowPageModal] = useState(false);
+            const [showUtmModal, setShowUtmModal] = useState(false);
+            const [editingPage, setEditingPage] = useState(null);
+            const [editingUtm, setEditingUtm] = useState(null);
+
+            // Carrega dados ao montar
+            useEffect(() => {
+                loadPages();
+                loadUtms();
+            }, []);
+
+            const loadPages = async () => {
+                try {
+                    const data = await apiCall('/api/pages');
+                    if (data && data.pages) {
+                        setPages(data.pages);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar páginas:', error);
+                }
+            };
+
+            const loadUtms = async () => {
+                try {
+                    const data = await apiCall('/api/utms');
+                    if (data && data.utms) {
+                        setUtms(data.utms);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar UTMs:', error);
+                }
+            };
+
+            const savePage = async (pageData) => {
+                try {
+                    if (editingPage) {
+                        await apiCall(`/api/pages/${editingPage.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(pageData)
+                        });
+                    } else {
+                        await apiCall('/api/pages', {
+                            method: 'POST',
+                            body: JSON.stringify(pageData)
+                        });
+                    }
+                    loadPages();
+                    setShowPageModal(false);
+                    setEditingPage(null);
+                } catch (error) {
+                    console.error('Erro ao salvar página:', error);
+                    alert('Erro ao salvar página');
+                }
+            };
+
+            const deletePage = async (id) => {
+                if (confirm('Deletar esta página?')) {
+                    try {
+                        await apiCall(`/api/pages/${id}`, { method: 'DELETE' });
+                        loadPages();
+                    } catch (error) {
+                        console.error('Erro ao deletar página:', error);
+                    }
+                }
+            };
+
+            const saveUtm = async (utmData) => {
+                try {
+                    if (editingUtm) {
+                        await apiCall(`/api/utms/${editingUtm.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(utmData)
+                        });
+                    } else {
+                        await apiCall('/api/utms', {
+                            method: 'POST',
+                            body: JSON.stringify(utmData)
+                        });
+                    }
+                    loadUtms();
+                    setShowUtmModal(false);
+                    setEditingUtm(null);
+                } catch (error) {
+                    console.error('Erro ao salvar UTM:', error);
+                    alert('Erro ao salvar UTM');
+                }
+            };
+
+            const deleteUtm = async (id) => {
+                if (confirm('Deletar esta UTM?')) {
+                    try {
+                        await apiCall(`/api/utms/${id}`, { method: 'DELETE' });
+                        loadUtms();
+                    } catch (error) {
+                        console.error('Erro ao deletar UTM:', error);
+                    }
+                }
+            };
+
+            return (
+                <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px' }}>
+                    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                            <div>
+                                <h1 style={{ color: 'white', fontSize: '42px', fontWeight: 'bold', marginBottom: '5px' }}>📊 Marketing Digital</h1>
+                                <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px' }}>Gerencie suas páginas e UTMs</p>
+                            </div>
+                            <button onClick={onBack} style={{
+                                padding: '12px 24px',
+                                background: 'rgba(255,255,255,0.2)',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: '12px',
+                                color: 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}>
+                                ← Voltar
+                            </button>
+                        </div>
+
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                            <button onClick={() => setActiveTab('pages')} style={{
+                                padding: '12px 24px',
+                                background: activeTab === 'pages' ? 'white' : 'rgba(255,255,255,0.2)',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: '12px',
+                                color: activeTab === 'pages' ? '#667eea' : 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}>
+                                📄 Páginas ({pages.length})
+                            </button>
+                            <button onClick={() => setActiveTab('utms')} style={{
+                                padding: '12px 24px',
+                                background: activeTab === 'utms' ? 'white' : 'rgba(255,255,255,0.2)',
+                                border: '2px solid rgba(255,255,255,0.3)',
+                                borderRadius: '12px',
+                                color: activeTab === 'utms' ? '#667eea' : 'white',
+                                fontSize: '16px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}>
+                                🔗 UTMs ({utms.length})
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ background: 'white', borderRadius: '16px', padding: '30px', minHeight: '500px' }}>
+                            {activeTab === 'pages' ? (
+                                <PagesManager pages={pages} onAdd={() => { setEditingPage(null); setShowPageModal(true); }} onEdit={(page) => { setEditingPage(page); setShowPageModal(true); }} onDelete={deletePage} />
+                            ) : (
+                                <UtmsManager utms={utms} onAdd={() => { setEditingUtm(null); setShowUtmModal(true); }} onEdit={(utm) => { setEditingUtm(utm); setShowUtmModal(true); }} onDelete={deleteUtm} />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Modals */}
+                    {showPageModal && <PageModal page={editingPage} onSave={savePage} onClose={() => { setShowPageModal(false); setEditingPage(null); }} />}
+                    {showUtmModal && <UtmModal utm={editingUtm} onSave={saveUtm} onClose={() => { setShowUtmModal(false); setEditingUtm(null); }} />}
+                </div>
+            );
+        }
+
+        function PagesManager({ pages, onAdd, onEdit, onDelete }) {
+            const categories = {
+                'landing': 'Landing Page',
+                'vsl': 'VSL',
+                'checkout': 'Checkout',
+                'thankyou': 'Obrigado',
+                'webinar': 'Webinar',
+                'other': 'Outro'
+            };
+
+            return (
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Minhas Páginas</h2>
+                        <button onClick={onAdd} style={{
+                            padding: '10px 20px',
+                            background: '#667eea',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                        }}>
+                            + Nova Página
+                        </button>
+                    </div>
+
+                    {pages.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+                            <div style={{ fontSize: '64px', marginBottom: '16px' }}>📄</div>
+                            <p style={{ fontSize: '18px' }}>Nenhuma página cadastrada</p>
+                            <p style={{ fontSize: '14px', marginTop: '8px' }}>Clique em "Nova Página" para começar</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                            {pages.map(page => (
+                                <div key={page.id} style={{
+                                    border: '1px solid #e5e7eb',
+                                    borderRadius: '12px',
+                                    padding: '20px',
+                                    transition: 'all 0.2s',
+                                    cursor: 'pointer'
+                                }} onMouseOver={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                                   onMouseOut={(e) => e.currentTarget.style.boxShadow = 'none'}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                        <span style={{
+                                            padding: '4px 12px',
+                                            background: '#f3f4f6',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '600'
+                                        }}>
+                                            {categories[page.category] || page.category}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={(e) => { e.stopPropagation(); onEdit(page); }} style={{
+                                                padding: '4px 8px',
+                                                background: '#3b82f6',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                color: 'white',
+                                                fontSize: '12px',
+                                                cursor: 'pointer'
+                                            }}>
+                                                ✏️
+                                            </button>
+                                            <button onClick={(e) => { e.stopPropagation(); onDelete(page.id); }} style={{
+                                                padding: '4px 8px',
+                                                background: '#ef4444',
+                                                border: 'none',
+                                                borderRadius: '4px',
+                                                color: 'white',
+                                                fontSize: '12px',
+                                                cursor: 'pointer'
+                                            }}>
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px', color: '#1f2937' }}>{page.name}</h3>
+                                    <a href={page.url} target="_blank" style={{ fontSize: '13px', color: '#6b7280', textDecoration: 'none', display: 'block', marginBottom: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {page.url}
+                                    </a>
+                                    {page.description && <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>{page.description}</p>}
+                                    {page.tags && page.tags.length > 0 && (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                            {page.tags.map((tag, i) => (
+                                                <span key={i} style={{
+                                                    padding: '2px 8px',
+                                                    background: '#e0e7ff',
+                                                    borderRadius: '4px',
+                                                    fontSize: '11px',
+                                                    color: '#667eea'
+                                                }}>
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function UtmsManager({ utms, onAdd, onEdit, onDelete }) {
+            const copyToClipboard = (text) => {
+                navigator.clipboard.writeText(text);
+                alert('UTM copiada!');
+            };
+
+            return (
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>Minhas UTMs</h2>
+                        <button onClick={onAdd} style={{
+                            padding: '10px 20px',
+                            background: '#667eea',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                        }}>
+                            + Nova UTM
+                        </button>
+                    </div>
+
+                    {utms.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+                            <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔗</div>
+                            <p style={{ fontSize: '18px' }}>Nenhuma UTM cadastrada</p>
+                            <p style={{ fontSize: '14px', marginTop: '8px' }}>Clique em "Nova UTM" para começar</p>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gap: '16px' }}>
+                            {utms.map(utm => {
+                                const exampleUrl = `https://exemplo.com?utm_source=${utm.utm_source}&utm_medium=${utm.utm_medium}&utm_campaign=${utm.utm_campaign}${utm.utm_content ? '&utm_content=' + utm.utm_content : ''}${utm.utm_term ? '&utm_term=' + utm.utm_term : ''}`;
+
+                                return (
+                                    <div key={utm.id} style={{
+                                        border: '1px solid #e5e7eb',
+                                        borderRadius: '12px',
+                                        padding: '20px',
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1f2937' }}>{utm.name}</h3>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => copyToClipboard(exampleUrl)} style={{
+                                                    padding: '6px 12px',
+                                                    background: '#10b981',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    color: 'white',
+                                                    fontSize: '12px',
+                                                    cursor: 'pointer'
+                                                }}>
+                                                    📋 Copiar URL
+                                                </button>
+                                                <button onClick={() => onEdit(utm)} style={{
+                                                    padding: '6px 12px',
+                                                    background: '#3b82f6',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    color: 'white',
+                                                    fontSize: '12px',
+                                                    cursor: 'pointer'
+                                                }}>
+                                                    ✏️ Editar
+                                                </button>
+                                                <button onClick={() => onDelete(utm.id)} style={{
+                                                    padding: '6px 12px',
+                                                    background: '#ef4444',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    color: 'white',
+                                                    fontSize: '12px',
+                                                    cursor: 'pointer'
+                                                }}>
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Source</div>
+                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>{utm.utm_source}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Medium</div>
+                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>{utm.utm_medium}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Campaign</div>
+                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>{utm.utm_campaign}</div>
+                                            </div>
+                                            {utm.utm_content && (
+                                                <div>
+                                                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Content</div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>{utm.utm_content}</div>
+                                                </div>
+                                            )}
+                                            {utm.utm_term && (
+                                                <div>
+                                                    <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Term</div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#4b5563' }}>{utm.utm_term}</div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', fontSize: '12px', color: '#6b7280', fontFamily: 'monospace', overflowX: 'auto' }}>
+                                            {exampleUrl}
+                                        </div>
+
+                                        {utm.notes && (
+                                            <div style={{ marginTop: '12px', fontSize: '13px', color: '#6b7280', fontStyle: 'italic' }}>
+                                                💡 {utm.notes}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function PageModal({ page, onSave, onClose }) {
+            const [formData, setFormData] = useState(page || {
+                name: '',
+                url: '',
+                category: 'landing',
+                description: '',
+                tags: [],
+                status: 'active'
+            });
+            const [tagInput, setTagInput] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.url) {
+                    alert('Nome e URL são obrigatórios');
+                    return;
+                }
+                onSave(formData);
+            };
+
+            const addTag = () => {
+                if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+                    setFormData({ ...formData, tags: [...formData.tags, tagInput.trim()] });
+                    setTagInput('');
+                }
+            };
+
+            const removeTag = (tag) => {
+                setFormData({ ...formData, tags: formData.tags.filter(t => t !== tag) });
+            };
+
+            return (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                    <div style={{ background: 'white', borderRadius: '16px', padding: '30px', width: '90%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>{page ? 'Editar Página' : 'Nova Página'}</h2>
+
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Nome *</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    placeholder="Ex: Landing Page - Curso Marketing Digital"
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>URL *</label>
+                                <input
+                                    type="url"
+                                    value={formData.url}
+                                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    placeholder="https://exemplo.com/minha-pagina"
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Categoria</label>
+                                    <select
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    >
+                                        <option value="landing">Landing Page</option>
+                                        <option value="vsl">VSL</option>
+                                        <option value="checkout">Checkout</option>
+                                        <option value="thankyou">Obrigado</option>
+                                        <option value="webinar">Webinar</option>
+                                        <option value="other">Outro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Status</label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    >
+                                        <option value="active">Ativa</option>
+                                        <option value="testing">Em Teste</option>
+                                        <option value="paused">Pausada</option>
+                                        <option value="archived">Arquivada</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Descrição</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', minHeight: '80px' }}
+                                    placeholder="Descreva o objetivo e contexto desta página..."
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Tags</label>
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                    <input
+                                        type="text"
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                                        style={{ flex: 1, padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                        placeholder="Digite uma tag e pressione Enter"
+                                    />
+                                    <button type="button" onClick={addTag} style={{
+                                        padding: '10px 16px',
+                                        background: '#667eea',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        color: 'white',
+                                        fontSize: '14px',
+                                        cursor: 'pointer'
+                                    }}>
+                                        + Adicionar
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {formData.tags.map((tag, i) => (
+                                        <span key={i} style={{
+                                            padding: '4px 10px',
+                                            background: '#e0e7ff',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            color: '#667eea',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px'
+                                        }}>
+                                            {tag}
+                                            <span onClick={() => removeTag(tag)} style={{ cursor: 'pointer', fontWeight: 'bold' }}>×</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button type="button" onClick={onClose} style={{
+                                    padding: '10px 20px',
+                                    background: '#f3f4f6',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" style={{
+                                    padding: '10px 20px',
+                                    background: '#667eea',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}>
+                                    {page ? 'Salvar Alterações' : 'Criar Página'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function UtmModal({ utm, onSave, onClose }) {
+            const [formData, setFormData] = useState(utm || {
+                name: '',
+                utm_source: '',
+                utm_medium: '',
+                utm_campaign: '',
+                utm_content: '',
+                utm_term: '',
+                notes: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.utm_source || !formData.utm_medium || !formData.utm_campaign) {
+                    alert('Nome, Source, Medium e Campaign são obrigatórios');
+                    return;
+                }
+                onSave(formData);
+            };
+
+            const exampleUrl = `https://exemplo.com?utm_source=${formData.utm_source || 'source'}&utm_medium=${formData.utm_medium || 'medium'}&utm_campaign=${formData.utm_campaign || 'campaign'}${formData.utm_content ? '&utm_content=' + formData.utm_content : ''}${formData.utm_term ? '&utm_term=' + formData.utm_term : ''}`;
+
+            return (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+                    <div style={{ background: 'white', borderRadius: '16px', padding: '30px', width: '90%', maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
+                        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px' }}>{utm ? 'Editar UTM' : 'Nova UTM'}</h2>
+
+                        <form onSubmit={handleSubmit}>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Nome da Campanha *</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    placeholder="Ex: Black Friday 2024 - Facebook Ads"
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Source * (origem)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.utm_source}
+                                        onChange={(e) => setFormData({ ...formData, utm_source: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                        placeholder="Ex: facebook, google, instagram"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Medium * (meio)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.utm_medium}
+                                        onChange={(e) => setFormData({ ...formData, utm_medium: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                        placeholder="Ex: cpc, email, social"
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Campaign * (campanha)</label>
+                                <input
+                                    type="text"
+                                    value={formData.utm_campaign}
+                                    onChange={(e) => setFormData({ ...formData, utm_campaign: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                    placeholder="Ex: black_friday_2024"
+                                />
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Content (conteúdo)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.utm_content}
+                                        onChange={(e) => setFormData({ ...formData, utm_content: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                        placeholder="Ex: banner_topo, video_1"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Term (termo)</label>
+                                    <input
+                                        type="text"
+                                        value={formData.utm_term}
+                                        onChange={(e) => setFormData({ ...formData, utm_term: e.target.value })}
+                                        style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px' }}
+                                        placeholder="Ex: marketing_digital"
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Observações</label>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                                    style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', minHeight: '60px' }}
+                                    placeholder="Anotações sobre esta campanha..."
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '20px', background: '#f9fafb', padding: '16px', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>Preview da URL:</div>
+                                <div style={{ fontSize: '12px', color: '#4b5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                    {exampleUrl}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button type="button" onClick={onClose} style={{
+                                    padding: '10px 20px',
+                                    background: '#f3f4f6',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" style={{
+                                    padding: '10px 20px',
+                                    background: '#667eea',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                }}>
+                                    {utm ? 'Salvar Alterações' : 'Criar UTM'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== APP ====================
+
         function App() {
             const [isAuthenticated, setIsAuthenticated] = React.useState(false);
             const [view, setView] = React.useState('dashboard');
@@ -4307,6 +5057,10 @@ HTML_CONTENT = """<!DOCTYPE html>
             const backToDashboard = () => {
                 setView('dashboard');
                 setFunnelId(null);
+            };
+
+            const goToMarketing = () => {
+                setView('marketing');
             };
 
             const handleLogout = async () => {
@@ -4345,8 +5099,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                         <FunnelDashboard
                             onSelectFunnel={selectFunnel}
                             onOpenSettings={() => setShowSettings(true)}
+                            onGoToMarketing={goToMarketing}
                             onLogout={handleLogout}
                         />
+                    ) : view === 'marketing' ? (
+                        <MarketingManager onBack={backToDashboard} />
                     ) : (
                         <FunnelBuilder funnelId={funnelId} onBack={backToDashboard} />
                     )}
