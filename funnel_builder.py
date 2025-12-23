@@ -108,10 +108,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-size: 20px;
             font-weight: 700;
             color: #0F172A;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
+            white-space: nowrap;
         }
 
         .metric-status {
@@ -477,7 +474,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             cursor: move;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
             border: 1px solid #E2E8F0;
-            transition: all 0.2s ease;
+            transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
             background: white;
             overflow: visible;
         }
@@ -495,6 +492,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         .funnel-element.dragging {
             opacity: 0.7;
             cursor: grabbing;
+            transition: none !important;
         }
 
         .element-header {
@@ -2544,8 +2542,8 @@ HTML_CONTENT = """<!DOCTYPE html>
 
             // Função helper para calcular posição do ponto de conexão
             const getConnectionPointPosition = (element, side) => {
-                const width = 220;  // largura do elemento
-                const height = 120; // altura aproximada do elemento
+                const width = 200;  // largura do elemento (atualizado de 220 para 200)
+                const height = 110; // altura aproximada do elemento
 
                 switch(side) {
                     case 'top':
