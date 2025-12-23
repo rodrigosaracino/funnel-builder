@@ -2629,7 +2629,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                             to: hoveredElement,
                             fromSide: connectionFromSide,
                             toSide: toSide,
-                            conversion: 10
+                            conversion: 100
                         }]);
                     }
 
@@ -2701,7 +2701,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                         id: Date.now() + 1,
                         from: connectingFrom,
                         to: newElement.id,
-                        conversion: 0
+                        conversion: 100
                     }]);
                 }
 
@@ -3233,7 +3233,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         const midY = (fromEl.y + toEl.y) / 2 + 50;
 
                                         return (
-                                            <g key={conn.id || idx}>
+                                            <g key={`${conn.id}-${fromEl.x}-${fromEl.y}-${toEl.x}-${toEl.y}`}>
                                                 <path
                                                     className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
                                                     d={getConnectionPath(conn.from, conn.to, conn.fromSide || 'right', conn.toSide || 'left')}
@@ -4535,10 +4535,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         <input
                                             type="number"
                                             className="form-input"
-                                            value={connections.find(c => c.id === selectedConnection)?.conversion === 0 ? '' : connections.find(c => c.id === selectedConnection)?.conversion}
+                                            value={connections.find(c => c.id === selectedConnection)?.conversion || ''}
                                             onChange={(e) => updateConnectionProperty('conversion', e.target.value)}
                                             step="0.1"
-                                            placeholder="Ex: 10"
+                                            min="0"
+                                            max="100"
+                                            placeholder="Ex: 100"
                                         />
                                     </div>
                                     <div className="empty-state" style={{marginTop: '20px'}}>
