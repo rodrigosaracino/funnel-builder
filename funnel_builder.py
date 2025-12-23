@@ -1935,7 +1935,22 @@ HTML_CONTENT = """<!DOCTYPE html>
                         const pageViews = Math.round(totalVisits * (pageViewRate / 100));
 
                         // Aplica taxa de conversão do elemento
-                        const conversionRate = element.conversionRate || 0;
+                        let conversionRate = element.conversionRate || 0;
+
+                        // Se for recuperação com canais configurados, calcula taxa combinada
+                        if (element.type === 'recuperacao' && element.recoveryChannels && element.recoveryChannels.length > 0) {
+                            const enabledChannels = element.recoveryChannels.filter(ch => ch.enabled);
+                            if (enabledChannels.length > 0) {
+                                // Calcula conversão combinada: soma de (alcance% × conversão%) de cada canal
+                                const combinedConversion = enabledChannels.reduce((sum, channel) => {
+                                    const reach = channel.reach || 0;
+                                    const conversion = channel.conversion || 0;
+                                    return sum + ((reach / 100) * (conversion / 100) * 100);
+                                }, 0);
+                                conversionRate = Math.min(combinedConversion, 100); // Limita a 100%
+                            }
+                        }
+
                         const leads = Math.round(pageViews * (conversionRate / 100));
 
                         const price = element.price || 0;
@@ -2013,7 +2028,24 @@ HTML_CONTENT = """<!DOCTYPE html>
                             const totalInvestment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
                             const pageViewRate = element.pageViewRate || 100;
                             const pageViews = Math.round(totalVisits * (pageViewRate / 100));
-                            const conversionRate = element.conversionRate || 0;
+
+                            // Aplica taxa de conversão do elemento
+                            let conversionRate = element.conversionRate || 0;
+
+                            // Se for recuperação com canais configurados, calcula taxa combinada
+                            if (element.type === 'recuperacao' && element.recoveryChannels && element.recoveryChannels.length > 0) {
+                                const enabledChannels = element.recoveryChannels.filter(ch => ch.enabled);
+                                if (enabledChannels.length > 0) {
+                                    // Calcula conversão combinada: soma de (alcance% × conversão%) de cada canal
+                                    const combinedConversion = enabledChannels.reduce((sum, channel) => {
+                                        const reach = channel.reach || 0;
+                                        const conversion = channel.conversion || 0;
+                                        return sum + ((reach / 100) * (conversion / 100) * 100);
+                                    }, 0);
+                                    conversionRate = Math.min(combinedConversion, 100); // Limita a 100%
+                                }
+                            }
+
                             const leads = Math.round(pageViews * (conversionRate / 100));
                             const price = element.price || 0;
                             let revenue = element.generatesRevenue ? (leads * price) : 0;
@@ -3988,24 +4020,160 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'recuperacao' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - RECUPERAÇÃO DE CARRINHO</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 5-10%: Taxa típica de recuperação</span>
+                                                <>
+                                                    <div className="benchmark-box">
+                                                        <h4>📋 BENCHMARKS - RECUPERAÇÃO DE CARRINHO</h4>
+                                                        <div className="benchmark-item">
+                                                            <span>• 5-10%: Taxa típica de recuperação</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• 10-20%: Boa campanha de recuperação</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>• 20%+: Excelente estratégia!</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>💡 Envie 3-5 emails em 7-14 dias</span>
+                                                        </div>
+                                                        <div className="benchmark-item">
+                                                            <span>💡 Use urgência e desconto progressivo</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 10-20%: Boa campanha de recuperação</span>
+
+                                                    <div style={{
+                                                        marginTop: '20px',
+                                                        padding: '15px',
+                                                        background: 'linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%)',
+                                                        borderRadius: '8px',
+                                                        border: '2px solid #fc8181'
+                                                    }}>
+                                                        <h4 style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                                            🛒 Canais de Recuperação
+                                                        </h4>
+
+                                                        {/* Inicializar canais se não existir */}
+                                                        {!selectedElementData.recoveryChannels && updateElementProperty('recoveryChannels', [
+                                                            {id: 1, type: 'email', name: 'Email 1h depois', enabled: true, reach: 70, conversion: 8},
+                                                            {id: 2, type: 'email', name: 'Email 24h depois', enabled: true, reach: 65, conversion: 6},
+                                                            {id: 3, type: 'whatsapp', name: 'WhatsApp 48h', enabled: false, reach: 40, conversion: 12}
+                                                        ])}
+
+                                                        {(selectedElementData.recoveryChannels || []).map((channel, index) => (
+                                                            <div key={channel.id} style={{
+                                                                marginBottom: '12px',
+                                                                padding: '12px',
+                                                                background: 'white',
+                                                                borderRadius: '6px',
+                                                                border: channel.enabled ? '2px solid #48bb78' : '1px solid #e2e8f0'
+                                                            }}>
+                                                                <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px'}}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={channel.enabled}
+                                                                        onChange={(e) => {
+                                                                            const newChannels = [...(selectedElementData.recoveryChannels || [])];
+                                                                            newChannels[index].enabled = e.target.checked;
+                                                                            updateElementProperty('recoveryChannels', newChannels);
+                                                                        }}
+                                                                        style={{width: '18px', height: '18px', cursor: 'pointer'}}
+                                                                    />
+                                                                    <span style={{fontWeight: '600', flex: 1}}>
+                                                                        {channel.type === 'email' ? '📧' : channel.type === 'whatsapp' ? '📱' : channel.type === 'call' ? '📞' : '🎯'}
+                                                                        {' '}{channel.name}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newChannels = (selectedElementData.recoveryChannels || []).filter((_, i) => i !== index);
+                                                                            updateElementProperty('recoveryChannels', newChannels);
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '4px 8px',
+                                                                            background: '#fc8181',
+                                                                            color: 'white',
+                                                                            border: 'none',
+                                                                            borderRadius: '4px',
+                                                                            cursor: 'pointer',
+                                                                            fontSize: '12px'
+                                                                        }}
+                                                                    >
+                                                                        🗑️
+                                                                    </button>
+                                                                </div>
+                                                                {channel.enabled && (
+                                                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px'}}>
+                                                                        <div>
+                                                                            <label style={{display: 'block', marginBottom: '4px', color: '#666'}}>Alcance %</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                value={channel.reach}
+                                                                                onChange={(e) => {
+                                                                                    const newChannels = [...(selectedElementData.recoveryChannels || [])];
+                                                                                    newChannels[index].reach = parseFloat(e.target.value) || 0;
+                                                                                    updateElementProperty('recoveryChannels', newChannels);
+                                                                                }}
+                                                                                style={{width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e0'}}
+                                                                            />
+                                                                        </div>
+                                                                        <div>
+                                                                            <label style={{display: 'block', marginBottom: '4px', color: '#666'}}>Conversão %</label>
+                                                                            <input
+                                                                                type="number"
+                                                                                value={channel.conversion}
+                                                                                onChange={(e) => {
+                                                                                    const newChannels = [...(selectedElementData.recoveryChannels || [])];
+                                                                                    newChannels[index].conversion = parseFloat(e.target.value) || 0;
+                                                                                    updateElementProperty('recoveryChannels', newChannels);
+                                                                                }}
+                                                                                style={{width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e0'}}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+
+                                                        <button
+                                                            onClick={() => {
+                                                                const newChannels = [...(selectedElementData.recoveryChannels || [])];
+                                                                const newId = Math.max(...newChannels.map(c => c.id), 0) + 1;
+                                                                newChannels.push({
+                                                                    id: newId,
+                                                                    type: 'email',
+                                                                    name: `Canal ${newId}`,
+                                                                    enabled: true,
+                                                                    reach: 50,
+                                                                    conversion: 5
+                                                                });
+                                                                updateElementProperty('recoveryChannels', newChannels);
+                                                            }}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '10px',
+                                                                background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '6px',
+                                                                cursor: 'pointer',
+                                                                fontWeight: '600',
+                                                                fontSize: '13px',
+                                                                marginTop: '10px'
+                                                            }}
+                                                        >
+                                                            ➕ Adicionar Canal
+                                                        </button>
+
+                                                        <div style={{
+                                                            marginTop: '15px',
+                                                            padding: '12px',
+                                                            background: '#edf2f7',
+                                                            borderRadius: '6px',
+                                                            fontSize: '12px',
+                                                            color: '#2d3748'
+                                                        }}>
+                                                            <strong>💡 Dica:</strong> O sistema calcula automaticamente a taxa de recuperação combinada de todos os canais ativos. Configure alcance e conversão de cada canal para simular diferentes estratégias!
+                                                        </div>
                                                     </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20%+: Excelente estratégia!</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>💡 Envie 3-5 emails em 7-14 dias</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>💡 Use urgência e desconto progressivo</span>
-                                                    </div>
-                                                </div>
+                                                </>
                                             )}
                                             {selectedElementData.type === 'ecommerce' && (
                                                 <div className="benchmark-box">

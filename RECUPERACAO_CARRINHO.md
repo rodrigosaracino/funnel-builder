@@ -1,8 +1,18 @@
-# 🛒 Recuperação de Carrinho Abandonado
+# 🛒 Recuperação de Carrinho Abandonado - Container Multi-Canal
 
 ## 📋 Visão Geral
 
-O elemento **Recuperação de Carrinho** foi criado especialmente para planejar estratégias de recuperação de pessoas que **NÃO compraram** (abandonaram o carrinho/checkout).
+O elemento **Recuperação de Carrinho** é um **container inteligente** que permite planejar estratégias completas de recuperação usando **múltiplos canais** (Email, WhatsApp, Ligações, Retargeting).
+
+### 🎯 Diferencial: Container, não Elemento Simples
+
+Diferente de outros elementos, a Recuperação de Carrinho funciona como um **container** onde você pode:
+- ✅ Adicionar múltiplos canais de comunicação
+- ✅ Configurar alcance e conversão de cada canal
+- ✅ Ativar/desativar canais individualmente
+- ✅ Ver o resultado combinado automaticamente
+
+O sistema **calcula automaticamente** a taxa de recuperação total baseada nos canais ativos!
 
 ## 🎯 Como Funciona
 
@@ -93,31 +103,75 @@ Combine diferentes canais para melhor resultado:
 
 ## 🔧 Como Configurar no Funnel Builder
 
-### Passo 1: Adicione o elemento
+### Passo 1: Adicione o Container
 
-1. Arraste "Recuperação de Carrinho" da biblioteca
-2. Posicione após o Checkout
+1. Na biblioteca (lado esquerdo), categoria **"Relacionamento"**
+2. Arraste **"Recuperação de Carrinho" 🛒**
+3. Posicione após o Checkout
 
 ### Passo 2: Conecte ao Checkout
 
-1. Conecte Checkout → Recuperação de Carrinho
+1. Conecte **Checkout → Recuperação de Carrinho**
 2. Configure a taxa de conversão da conexão:
    - **100%** = Todos os não-compradores entram na sequência
    - **50%** = Metade dos não-compradores (ex: só quem deu email)
 
-### Passo 3: Configure o elemento
+### Passo 3: Configure os Canais
 
-**Campos importantes:**
+1. **Clique no elemento de Recuperação**
+2. No painel lateral, você verá **"🛒 Canais de Recuperação"**
+3. Por padrão, vem com 3 canais pré-configurados:
+   - 📧 Email 1h depois
+   - 📧 Email 24h depois
+   - 📱 WhatsApp 48h (desativado)
 
-- **Taxa de Conversão:** % de recuperação esperada (5-20%)
-- **Tipo de Recuperação:** Email, WhatsApp, Retargeting, Multi-canal
-- **Tempo de Ação:** Quantos dias a sequência dura
-- **Custo Adicional:** Investimento extra (ex: desconto oferecido)
+#### Gerenciar Canais:
 
-### Passo 4: Conecte ao Checkout Final
+**Ativar/Desativar:**
+- ✅ Marque o checkbox para ativar
+- ⬜ Desmarque para desativar
 
-1. Conecte Recuperação → Checkout (ou elemento de venda)
+**Configurar Canal:**
+- **Alcance %**: Quantas pessoas você consegue contatar
+  - Email: 70% (nem todos abrem)
+  - WhatsApp: 40% (nem todos têm WhatsApp cadastrado)
+  - Ligação: 10% (poucos atendem)
+  - Retargeting: 60% (baseado em pixel)
+
+- **Conversão %**: Taxa de conversão desse canal específico
+  - Email 1h: 8%
+  - Email 24h: 6%
+  - WhatsApp: 12%
+  - Ligação: 25%
+
+**Adicionar Novo Canal:**
+- Clique em **"➕ Adicionar Canal"**
+- Configure nome, alcance e conversão
+- Escolha o ícone (📧📱📞🎯)
+
+**Remover Canal:**
+- Clique no botão **🗑️** do canal
+
+### Passo 4: O Sistema Calcula Automaticamente!
+
+O Funnel Builder calcula a **taxa de recuperação combinada** usando a fórmula:
+
+```
+Conversão Total = Σ (Alcance% × Conversão%) de cada canal ativo
+```
+
+**Exemplo:**
+- Email 1h: 70% alcance × 8% conversão = 5.6%
+- Email 24h: 65% alcance × 6% conversão = 3.9%
+- WhatsApp: 40% alcance × 12% conversão = 4.8%
+
+**Total: 14.3% de recuperação!**
+
+### Passo 5: Conecte ao Checkout Final
+
+1. Conecte **Recuperação → Checkout** (ou elemento de venda)
 2. As pessoas recuperadas voltam ao processo de compra
+3. O sistema mostra automaticamente quantas vendas foram recuperadas!
 
 ## 📈 Exemplos Práticos
 
