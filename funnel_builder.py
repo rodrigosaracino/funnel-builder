@@ -78,15 +78,16 @@ HTML_CONTENT = """<!DOCTYPE html>
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px) saturate(180%);
-            -webkit-backdrop-filter: blur(12px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
-            padding: 16px 32px;
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+            border-radius: 12px;
+            padding: 12px 24px;
             display: flex;
-            gap: 40px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+            align-items: center;
+            gap: 32px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
             z-index: 1000;
         }
 
@@ -95,22 +96,22 @@ HTML_CONTENT = """<!DOCTYPE html>
         }
 
         .metric-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #64748B;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
         }
 
         .metric-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: #0F172A;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .metric-status {
@@ -234,9 +235,12 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-size: 13px;
             font-weight: 600;
             transition: all 0.2s;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid #e2e8f0;
             position: relative;
             overflow: hidden;
+            /* Monocromático por padrão - sobrescreve classes de cor */
+            background: #f8fafc !important;
+            color: #64748b !important;
         }
 
         .sidebar.collapsed .library-element {
@@ -255,7 +259,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
             opacity: 0;
             transition: opacity 0.2s;
         }
@@ -266,8 +270,9 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .library-element:hover {
             transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+            color: #475569 !important;
         }
 
         .library-element:active {
@@ -276,6 +281,18 @@ HTML_CONTENT = """<!DOCTYPE html>
 
         .element-icon {
             font-size: 20px;
+            color: #64748b;
+            position: relative;
+            z-index: 1;
+        }
+
+        .library-element:hover .element-icon {
+            color: #475569;
+        }
+
+        .library-element span {
+            position: relative;
+            z-index: 1;
         }
 
         .canvas-container {
@@ -462,7 +479,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             border: 1px solid #E2E8F0;
             transition: all 0.2s ease;
             background: white;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .funnel-element:hover {
@@ -487,6 +504,8 @@ HTML_CONTENT = """<!DOCTYPE html>
             padding: 10px 12px;
             color: white;
             position: relative;
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
         }
 
         .element-title {
@@ -893,29 +912,30 @@ HTML_CONTENT = """<!DOCTYPE html>
             font-size: 14px;
         }
 
-        .color-google { background: linear-gradient(135deg, #4285f4 0%, #34a853 100%); }
-        .color-facebook { background: linear-gradient(135deg, #1877f2 0%, #0a66c2 100%); }
-        .color-trafego { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .color-retargeting { background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); }
-        .color-landing { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .color-captura { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
-        .color-vsl { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .color-vendas { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .color-checkout { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
-        .color-obrigado { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
-        .color-squeeze { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
-        .color-ecommerce { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .color-email { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .color-sequencia { background: linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%); }
-        .color-whatsapp { background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); }
-        .color-quiz { background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%); }
-        .color-video { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .color-webinar { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .color-countdown { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
-        .color-call { background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); }
-        .color-upsell { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
-        .color-downsell { background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); color: #2d3748; }
-        .color-membros { background: linear-gradient(135deg, #8e44ad 0%, #c0392b 100%); }
+        /* Paleta Profissional - Tailwind Slate/Gray (Muted & Desaturated) */
+        .color-google { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-facebook { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-trafego { background: linear-gradient(135deg, #334155 0%, #475569 100%); }
+        .color-retargeting { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+        .color-landing { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-captura { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); color: #1e293b; }
+        .color-vsl { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+        .color-vendas { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .color-checkout { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .color-obrigado { background: linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 100%); color: #1e293b; }
+        .color-squeeze { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); color: #1e293b; }
+        .color-ecommerce { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-email { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+        .color-sequencia { background: linear-gradient(135deg, #334155 0%, #475569 100%); }
+        .color-whatsapp { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-quiz { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+        .color-video { background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); }
+        .color-webinar { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-countdown { background: linear-gradient(135deg, #334155 0%, #475569 100%); }
+        .color-call { background: linear-gradient(135deg, #475569 0%, #64748b 100%); }
+        .color-upsell { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); color: #1e293b; }
+        .color-downsell { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); color: #1e293b; }
+        .color-membros { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
 
         /* Login Screen Styles */
         .login-container {
@@ -1522,65 +1542,102 @@ HTML_CONTENT = """<!DOCTYPE html>
         // Carrega configurações ou usa padrão
         const systemConfig = loadSystemConfig();
 
+        // Componente de Ícone SVG Profissional
+        const Icon = ({ name, size = 16, stroke = 2, className = "" }) => {
+            const icons = {
+                target: <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 12h.01" />,
+                search: <path d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" />,
+                facebook: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />,
+                repeat: <path d="m17 2 4 4-4 4 M3 11V9a4 4 0 0 1 4-4h14 M7 22l-4-4 4-4 M21 13v2a4 4 0 0 1-4 4H3" />,
+                rocket: <path d="M12 2c-4 8-8 12-8 12s4 4 12 4c0 0 4-8 4-12s-8-4-8-4z M8 12h8" />,
+                file: <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" />,
+                "file-edit": <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2h-5.5 M14 2v6h6 M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l.99-3.95 5.43-5.44z" />,
+                video: <path d="m22 8-6 4 6 4V8z M16 8v8H4V8h12z M2 6h14v12H2z" />,
+                diamond: <path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41L13.7 2.71a2.41 2.41 0 0 0-3.41 0z" />,
+                "credit-card": <path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z M1 10h22" />,
+                "party-popper": <path d="M5.8 11.3 2 22l10.7-3.79 M4 3h.01 M22 8h.01 M15 2h.01 M22 20h.01 M22 2l-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.09.65.36 1.28.76 1.89l3.26 4.96c.39.6.66 1.23.75 1.88a2.9 2.9 0 0 1-1.96 3.12z M7 13.5l4-3.5" />,
+                gift: <path d="M20 12v10H4V12 M2 7h20v5H2z M12 22V7 M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />,
+                "shopping-cart": <path d="M9 2 7.17 6H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4.17L11 2H9z M21 15H3 M9 11v6 M15 11v6" />,
+                mail: <path d="M22 6 12 13 2 6 M2 6v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />,
+                "mail-open": <path d="m22 13-9.5 5.5L3 13V6l9.5-4L22 6v7z M3 6l9 6 9-6" />,
+                "message-circle": <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
+                smartphone: <path d="M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z M12 18h.01" />,
+                "bar-chart": <path d="M12 20V10 M18 20V4 M6 20v-4" />,
+                play: <path d="m6 4 14 8-14 8z" />,
+                phone: <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />,
+                clock: <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2" />,
+                "trending-up": <path d="m23 6-9.5 9.5-5-5L1 18 M17 6h6v6" />,
+                "trending-down": <path d="M23 18 13.5 8.5l-5 5L1 6 M17 18h6v-6" />,
+                book: <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />,
+                zap: <path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z" />
+            };
+
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" className={className} style={{display: 'inline-block', verticalAlign: 'middle'}}>
+                    {icons[name] || icons.target}
+                </svg>
+            );
+        };
+
         const ELEMENT_CATEGORIES_DEFAULT = [
             {
                 name: 'Tráfego',
-                icon: '🎯',
+                icon: 'target',
                 elements: [
-                    { type: 'google', name: 'Google Ads', icon: '🔍', color: 'color-google' },
-                    { type: 'facebook', name: 'Facebook Ads', icon: '📘', color: 'color-facebook' },
-                    { type: 'trafego', name: 'Outros Tráfegos', icon: '🎯', color: 'color-trafego' },
-                    { type: 'retargeting', name: 'Retargeting', icon: '🔄', color: 'color-retargeting' }
+                    { type: 'google', name: 'Google Ads', icon: 'search', color: 'color-google' },
+                    { type: 'facebook', name: 'Facebook Ads', icon: 'facebook', color: 'color-facebook' },
+                    { type: 'trafego', name: 'Outros Tráfegos', icon: 'target', color: 'color-trafego' },
+                    { type: 'retargeting', name: 'Retargeting', icon: 'repeat', color: 'color-retargeting' }
                 ]
             },
             {
                 name: 'Páginas',
-                icon: '📄',
+                icon: 'file',
                 elements: [
-                    { type: 'landing', name: 'Landing Page', icon: '🚀', color: 'color-landing' },
-                    { type: 'captura', name: 'Página de Captura', icon: '📝', color: 'color-captura' },
-                    { type: 'vsl', name: 'VSL (Video Sales Letter)', icon: '🎬', color: 'color-vsl' },
-                    { type: 'vendas', name: 'Página de Vendas', icon: '💎', color: 'color-vendas' },
-                    { type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout' },
-                    { type: 'obrigado', name: 'Página Obrigado', icon: '🎉', color: 'color-obrigado' },
-                    { type: 'squeeze', name: 'Squeeze Page', icon: '🎁', color: 'color-squeeze' },
-                    { type: 'ecommerce', name: 'E-commerce', icon: '🛒', color: 'color-ecommerce' }
+                    { type: 'landing', name: 'Landing Page', icon: 'rocket', color: 'color-landing' },
+                    { type: 'captura', name: 'Página de Captura', icon: 'file-edit', color: 'color-captura' },
+                    { type: 'vsl', name: 'VSL (Video Sales Letter)', icon: 'video', color: 'color-vsl' },
+                    { type: 'vendas', name: 'Página de Vendas', icon: 'diamond', color: 'color-vendas' },
+                    { type: 'checkout', name: 'Checkout', icon: 'credit-card', color: 'color-checkout' },
+                    { type: 'obrigado', name: 'Página Obrigado', icon: 'party-popper', color: 'color-obrigado' },
+                    { type: 'squeeze', name: 'Squeeze Page', icon: 'gift', color: 'color-squeeze' },
+                    { type: 'ecommerce', name: 'E-commerce', icon: 'shopping-cart', color: 'color-ecommerce' }
                 ]
             },
             {
                 name: 'Relacionamento',
-                icon: '💬',
+                icon: 'message-circle',
                 elements: [
-                    { type: 'email', name: 'Email', icon: '✉️', color: 'color-email' },
-                    { type: 'sequencia', name: 'Sequência Email', icon: '📧', color: 'color-sequencia' },
-                    { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' },
-                    { type: 'recuperacao', name: 'Recuperação de Carrinho', icon: '🛒', color: 'color-recuperacao' }
+                    { type: 'email', name: 'Email', icon: 'mail', color: 'color-email' },
+                    { type: 'sequencia', name: 'Sequência Email', icon: 'mail-open', color: 'color-sequencia' },
+                    { type: 'whatsapp', name: 'WhatsApp', icon: 'smartphone', color: 'color-whatsapp' },
+                    { type: 'recuperacao', name: 'Recuperação de Carrinho', icon: 'shopping-cart', color: 'color-recuperacao' }
                 ]
             },
             {
                 name: 'Engajamento',
-                icon: '🎬',
+                icon: 'zap',
                 elements: [
-                    { type: 'quiz', name: 'Quiz/Enquete', icon: '📊', color: 'color-quiz' },
-                    { type: 'video', name: 'Vídeo', icon: '▶️', color: 'color-video' },
-                    { type: 'webinar', name: 'Webinar', icon: '🎥', color: 'color-webinar' },
-                    { type: 'call', name: 'Call/Consulta', icon: '📞', color: 'color-call' }
+                    { type: 'quiz', name: 'Quiz/Enquete', icon: 'bar-chart', color: 'color-quiz' },
+                    { type: 'video', name: 'Vídeo', icon: 'play', color: 'color-video' },
+                    { type: 'webinar', name: 'Webinar', icon: 'video', color: 'color-webinar' },
+                    { type: 'call', name: 'Call/Consulta', icon: 'phone', color: 'color-call' }
                 ]
             },
             {
                 name: 'Conversão',
-                icon: '💰',
+                icon: 'zap',
                 elements: [
-                    { type: 'countdown', name: 'Countdown', icon: '⏰', color: 'color-countdown' },
-                    { type: 'upsell', name: 'Upsell', icon: '⬆️', color: 'color-upsell' },
-                    { type: 'downsell', name: 'Downsell', icon: '⬇️', color: 'color-downsell' }
+                    { type: 'countdown', name: 'Countdown', icon: 'clock', color: 'color-countdown' },
+                    { type: 'upsell', name: 'Upsell', icon: 'trending-up', color: 'color-upsell' },
+                    { type: 'downsell', name: 'Downsell', icon: 'trending-down', color: 'color-downsell' }
                 ]
             },
             {
                 name: 'Pós-Venda',
-                icon: '🎁',
+                icon: 'gift',
                 elements: [
-                    { type: 'membros', name: 'Área de Membros', icon: '📚', color: 'color-membros' }
+                    { type: 'membros', name: 'Área de Membros', icon: 'book', color: 'color-membros' }
                 ]
             }
         ];
@@ -2879,85 +2936,82 @@ HTML_CONTENT = """<!DOCTYPE html>
             return (
                 <div className="app">
                     <div className="dashboard">
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                             {onBack && (
-                                <button onClick={onBack} style={{ padding: '10px 20px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                                <button onClick={onBack} style={{ padding: '6px 12px', backgroundColor: 'rgba(100, 116, 139, 0.15)', color: '#334155', border: '1px solid rgba(100, 116, 139, 0.2)', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '13px', transition: 'all 0.2s' }}>
                                     ← Voltar
                                 </button>
                             )}
                             <button
                                 onClick={() => setShowBottleneckAnalysis(!showBottleneckAnalysis)}
                                 style={{
-                                    padding: '10px 20px',
-                                    backgroundColor: showBottleneckAnalysis ? '#ef4444' : '#10b981',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '8px',
+                                    padding: '6px 12px',
+                                    backgroundColor: showBottleneckAnalysis ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                    color: showBottleneckAnalysis ? '#dc2626' : '#059669',
+                                    border: `1px solid ${showBottleneckAnalysis ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
+                                    borderRadius: '6px',
                                     cursor: 'pointer',
                                     fontWeight: '600',
+                                    fontSize: '13px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px'
+                                    gap: '6px',
+                                    transition: 'all 0.2s'
                                 }}
                             >
-                                {showBottleneckAnalysis ? '✕ Fechar Análise' : '🔍 Análise de Gargalos'}
+                                {showBottleneckAnalysis ? 'Fechar Análise' : 'Análise de Gargalos'}
                             </button>
                             <button
                                 onClick={() => saveFunnel()}
                                 disabled={saving}
                                 style={{
-                                    padding: '10px 20px',
-                                    backgroundColor: saveSuccess ? 'rgba(46, 213, 115, 0.5)' : (saving ? 'rgba(100,100,100,0.3)' : 'rgba(46, 213, 115, 0.3)'),
-                                    color: 'white',
-                                    border: saveSuccess ? '1px solid rgba(46, 213, 115, 0.8)' : (saving ? '1px solid rgba(100,100,100,0.5)' : '1px solid rgba(46, 213, 115, 0.5)'),
-                                    borderRadius: '8px',
+                                    padding: '6px 12px',
+                                    backgroundColor: saveSuccess ? 'rgba(46, 213, 115, 0.15)' : (saving ? 'rgba(100, 116, 139, 0.1)' : 'rgba(59, 130, 246, 0.15)'),
+                                    color: saveSuccess ? '#059669' : (saving ? '#64748b' : '#2563eb'),
+                                    border: saveSuccess ? '1px solid rgba(46, 213, 115, 0.3)' : (saving ? '1px solid rgba(100, 116, 139, 0.2)' : '1px solid rgba(59, 130, 246, 0.3)'),
+                                    borderRadius: '6px',
                                     cursor: saving ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
-                                    transition: 'all 0.3s ease'
+                                    fontSize: '13px',
+                                    transition: 'all 0.2s'
                                 }}
                             >
-                                {saveSuccess ? '✅ Salvo!' : (saving ? '💾 Salvando...' : '💾 Salvar')}
+                                {saveSuccess ? 'Salvo!' : (saving ? 'Salvando...' : 'Salvar')}
                             </button>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">🎯 Visitantes Iniciais</div>
+                            <div className="metric-label">Visitantes</div>
                             <div className="metric-value">
                                 {dashboardMetrics.visitors.toLocaleString('pt-BR')}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">💰 Investimento Total</div>
+                            <div className="metric-label">Investimento</div>
                             <div className="metric-value">
                                 R$ {dashboardMetrics.investment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">📊 CAC (Custo por Cliente)</div>
+                            <div className="metric-label">CAC</div>
                             <div className="metric-value">
-                                <span className={dashboardMetrics.cac < 50 ? 'metric-positive' : dashboardMetrics.cac < 150 ? 'metric-neutral' : 'metric-negative'}>
-                                    {dashboardMetrics.cac < 50 ? '✅' : dashboardMetrics.cac < 150 ? '⚠️' : '❌'}
-                                </span>
                                 R$ {dashboardMetrics.cac.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">🛒 Conversões Esperadas</div>
+                            <div className="metric-label">Conversões</div>
                             <div className="metric-value">
                                 {dashboardMetrics.sales.toLocaleString('pt-BR')}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">💵 Receita Projetada</div>
+                            <div className="metric-label">Receita</div>
                             <div className="metric-value">
                                 R$ {dashboardMetrics.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                         </div>
                         <div className="metric">
-                            <div className="metric-label">📈 ROI Projetado</div>
+                            <div className="metric-label">ROI</div>
                             <div className="metric-value">
-                                <span className={dashboardMetrics.roi >= 100 ? 'metric-positive' : dashboardMetrics.roi >= 0 ? 'metric-neutral' : 'metric-negative'}>
-                                    {dashboardMetrics.roi >= 100 ? '✅' : dashboardMetrics.roi >= 0 ? '⚠️' : '❌'}
-                                </span>
                                 {dashboardMetrics.roi.toFixed(1)}%
                             </div>
                         </div>
@@ -3113,12 +3167,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                             <div className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
                                 {sidebarCollapsed ? '→' : '←'}
                             </div>
-                            <h3>📦 Elementos do Funil</h3>
+                            <h3>Elementos do Funil</h3>
                             <div className="element-library">
                                 {ELEMENT_CATEGORIES.map((category, idx) => (
                                     <div key={idx} className="element-category">
                                         <div className="category-header">
-                                            <span className="category-icon">{category.icon}</span>
+                                            <span className="category-icon"><Icon name={category.icon} size={18} /></span>
                                             <span className="category-name">{category.name}</span>
                                         </div>
                                         {category.elements.map(type => (
@@ -3128,7 +3182,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 draggable
                                                 onDragEnd={(e) => handleDragFromLibrary(e, type)}
                                             >
-                                                <span className="element-icon">{type.icon}</span>
+                                                <span className="element-icon"><Icon name={type.icon} size={16} /></span>
                                                 <span>{type.name}</span>
                                             </div>
                                         ))}
@@ -3266,7 +3320,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             />
 
                                             <div className="element-header">
-                                                <span className="element-icon">{element.icon}</span>
+                                                <span className="element-icon"><Icon name={element.icon} size={16} /></span>
                                                 <span className="element-title">{element.name}</span>
                                                 <div className="element-actions">
                                                     <button
@@ -3274,7 +3328,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         onClick={(e) => handleDeleteElement(e, element.id)}
                                                         title="Deletar"
                                                     >
-                                                        🗑️
+                                                        ✕
                                                     </button>
                                                 </div>
                                             </div>
@@ -3387,11 +3441,11 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <h4>➕ Adicionar Elemento</h4>
+                                    <h4>+ Adicionar Elemento</h4>
                                     {ELEMENT_CATEGORIES.map((category, idx) => (
                                         <div key={idx} className="popup-category">
                                             <div className="popup-category-header">
-                                                <span className="popup-category-icon">{category.icon}</span>
+                                                <span className="popup-category-icon"><Icon name={category.icon} size={16} /></span>
                                                 <span className="popup-category-name">{category.name}</span>
                                             </div>
                                             {category.elements.map(type => (
@@ -3400,7 +3454,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     className={`popup-element-item ${type.color}`}
                                                     onClick={() => handleElementMenuSelect(type)}
                                                 >
-                                                    <span className="element-icon">{type.icon}</span>
+                                                    <span className="element-icon"><Icon name={type.icon} size={16} /></span>
                                                     <span>{type.name}</span>
                                                 </div>
                                             ))}
