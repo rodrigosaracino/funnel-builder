@@ -1223,6 +1223,95 @@ HTML_CONTENT = """<!DOCTYPE html>
             color: #4a5568;
             margin-bottom: 4px;
         }
+
+        /* Sistema de Tooltips Hover */
+        .info-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 6px;
+            position: relative;
+            vertical-align: middle;
+        }
+
+        .info-icon:hover {
+            background: #5568d3;
+        }
+
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 8px);
+            transform: translateX(-50%);
+            background: #2d3748;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+        }
+
+        .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #2d3748;
+        }
+
+        .tooltip-container:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Tooltip com conteúdo largo */
+        .tooltip-content.wide {
+            white-space: normal;
+            max-width: 280px;
+            width: max-content;
+        }
+
+        /* Benchmark box compacta */
+        .benchmark-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f7fafc;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .benchmark-compact h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -2186,7 +2275,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     cpm: 0,
                     trafficMode: 'absolute', // 'absolute' ou 'metrics'
                     pageViewRate: 100,
-                    conversionRate: 0,
+                    conversionRate: elementType.type === 'recuperacao' ? 100 : 0,
                     price: 0,
                     url: '',
                     description: '',
@@ -2447,7 +2536,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     cpc: 0, // Custo Por Clique (usado pelo Google Ads)
                     trafficMode: defaultTrafficMode, // 'absolute' ou 'metrics'
                     pageViewRate: 100,
-                    conversionRate: 0,
+                    conversionRate: elementType.type === 'recuperacao' ? 100 : 0,
                     price: 0,
                     url: '',
                     description: '',
@@ -3702,16 +3791,16 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="benchmark-box">
-                                                <h4>📋 BENCHMARKS DO MERCADO</h4>
-                                                <div className="benchmark-item">
-                                                    <span>• 5-15%: Bom para captura de leads</span>
-                                                </div>
-                                                <div className="benchmark-item">
-                                                    <span>• 15-30%: Excelente conversão!</span>
-                                                </div>
-                                                <div className="benchmark-item">
-                                                    <span>• 30%+: Landing otimizada profissionalmente</span>
+                                            <div className="benchmark-compact">
+                                                <h4>📋 Benchmarks</h4>
+                                                <div className="tooltip-container">
+                                                    <span className="info-icon">i</span>
+                                                    <div className="tooltip-content wide">
+                                                        <strong>Taxa de Conversão:</strong><br/>
+                                                        • 5-15%: Bom para leads<br/>
+                                                        • 15-30%: Excelente<br/>
+                                                        • 30%+: Otimizada
+                                                    </div>
                                                 </div>
                                             </div>
                                         </>
@@ -3890,287 +3979,257 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 </>
                                             )}
                                             {selectedElementData.type === 'captura' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - PÁGINA DE CAPTURA</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20-40%: Taxa típica de conversão</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40-60%: Muito boa!</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 60%+: Excepcional!</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Conversão:</strong><br/>
+                                                            • 20-40%: Taxa típica<br/>
+                                                            • 40-60%: Muito boa<br/>
+                                                            • 60%+: Excepcional
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'vsl' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - VSL</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40-60%: Taxa de play</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Assistem até o final</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 5-15%: Conversão típica de VSL</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>VSL - Métricas:</strong><br/>
+                                                            • 40-60%: Taxa de play<br/>
+                                                            • 30-50%: Assistem até o final<br/>
+                                                            • 5-15%: Conversão típica
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'vendas' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - PÁGINA DE VENDAS</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 2-5%: Tráfego frio</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 5-15%: Tráfego qualificado</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 15%+: Tráfego ultra-qualificado</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Conversão:</strong><br/>
+                                                            • 2-5%: Tráfego frio<br/>
+                                                            • 5-15%: Tráfego qualificado<br/>
+                                                            • 15%+: Ultra-qualificado
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'squeeze' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - SQUEEZE PAGE</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Taxa típica</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 50-70%: Muito boa!</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 70%+: Squeeze page otimizada!</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Conversão:</strong><br/>
+                                                            • 30-50%: Taxa típica<br/>
+                                                            • 50-70%: Muito boa<br/>
+                                                            • 70%+: Otimizada
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'checkout' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - CHECKOUT</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 1-3%: Típico e-commerce</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 5-10%: Checkout otimizado</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20%+: Tráfego ultra-qualificado</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Conversão:</strong><br/>
+                                                            • 1-3%: Típico e-commerce<br/>
+                                                            • 5-10%: Otimizado<br/>
+                                                            • 10%+: Excepcional
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'upsell' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - UPSELL</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 10-20%: Taxa típica de aceitação</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20-40%: Oferta bem alinhada</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40%+: Upsell irresistível!</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Aceitação:</strong><br/>
+                                                            • 10-20%: Taxa típica<br/>
+                                                            • 20-40%: Boa oferta<br/>
+                                                            • 40%+: Irresistível
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'downsell' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - DOWNSELL</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20-30%: Taxa típica de aceitação</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Boa oferta alternativa</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 50%+: Downsell muito atrativo!</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Taxa de Aceitação:</strong><br/>
+                                                            • 20-30%: Taxa típica<br/>
+                                                            • 30-50%: Boa oferta<br/>
+                                                            • 50%+: Muito atrativo
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'recuperacao' && (
                                                 <>
-                                                    <div className="benchmark-box">
-                                                        <h4>📋 BENCHMARKS - RECUPERAÇÃO DE CARRINHO</h4>
-                                                        <div className="benchmark-item">
-                                                            <span>• 5-10%: Taxa típica de recuperação</span>
-                                                        </div>
-                                                        <div className="benchmark-item">
-                                                            <span>• 10-20%: Boa campanha de recuperação</span>
-                                                        </div>
-                                                        <div className="benchmark-item">
-                                                            <span>• 20%+: Excelente estratégia!</span>
+                                                    <div className="benchmark-compact">
+                                                        <h4>📋 Benchmarks</h4>
+                                                        <div className="tooltip-container">
+                                                            <span className="info-icon">i</span>
+                                                            <div className="tooltip-content wide">
+                                                                <strong>Taxa de Recuperação:</strong><br/>
+                                                                • 5-10%: Taxa típica<br/>
+                                                                • 10-20%: Boa campanha<br/>
+                                                                • 20%+: Excelente!
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div style={{
-                                                        marginTop: '20px',
-                                                        padding: '15px',
-                                                        background: 'linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%)',
-                                                        borderRadius: '8px',
-                                                        border: '2px solid #fc8181'
-                                                    }}>
-                                                        <h4 style={{marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                                            💡 Como Usar - Estratégia Visual
-                                                        </h4>
-                                                        <div style={{fontSize: '13px', lineHeight: '1.6', color: '#2d3748'}}>
-                                                            <p style={{marginBottom: '10px'}}>
-                                                                <strong>Este elemento recebe quem NÃO comprou.</strong>
-                                                            </p>
-                                                            <p style={{marginBottom: '10px'}}>
-                                                                Monte sua estratégia de recuperação conectando elementos em sequência:
-                                                            </p>
-                                                            <div style={{
-                                                                background: 'white',
-                                                                padding: '12px',
-                                                                borderRadius: '6px',
-                                                                fontFamily: 'monospace',
-                                                                fontSize: '11px',
-                                                                marginBottom: '10px',
-                                                                border: '1px solid #e2e8f0'
-                                                            }}>
-                                                                [Checkout] → [❌ NÃO comprou]<br/>
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
-                                                                [📧 Email 1h] → [Recuperados]<br/>
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
-                                                                [📧 Email 24h] → [Recuperados]<br/>
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
-                                                                [📱 WhatsApp] → [Recuperados]<br/>
-                                                                &nbsp;&nbsp;&nbsp;&nbsp;↓<br/>
-                                                                [Checkout Final]
+                                                    <div className="benchmark-compact" style={{background: 'linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%)', border: '2px solid #fc8181'}}>
+                                                        <h4>💡 Como Usar</h4>
+                                                        <div className="tooltip-container">
+                                                            <span className="info-icon" style={{background: '#fc8181'}}>i</span>
+                                                            <div className="tooltip-content wide">
+                                                                <strong>Estratégia Visual:</strong><br/>
+                                                                Este elemento recebe quem NÃO comprou.<br/><br/>
+                                                                Monte sua sequência:<br/>
+                                                                Checkout → Recuperação →<br/>
+                                                                Email 1h → Email 24h →<br/>
+                                                                WhatsApp → Checkout Final
                                                             </div>
-                                                            <p style={{fontSize: '12px', color: '#718096'}}>
-                                                                ✓ Use elementos de Email, WhatsApp, Sequência<br/>
-                                                                ✓ Configure taxa de conversão de cada um<br/>
-                                                                ✓ Veja visualmente cada etapa da recuperação<br/>
-                                                                ✓ Conecte todos ao Checkout Final no final
-                                                            </p>
                                                         </div>
                                                     </div>
                                                 </>
                                             )}
                                             {selectedElementData.type === 'ecommerce' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - E-COMMERCE</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 15-25%: Taxa de Add to Cart</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 2-5%: Conversão em vendas</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 50-70%: Abandono de carrinho típico</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas E-commerce:</strong><br/>
+                                                            • 15-25%: Add to Cart<br/>
+                                                            • 2-5%: Conversão<br/>
+                                                            • 50-70%: Abandono
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'whatsapp' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - WHATSAPP</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40-60%: Taxa de abertura</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 15-25%: Taxa de resposta</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 60%+: Excelente engajamento!</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas WhatsApp:</strong><br/>
+                                                            • 40-60%: Taxa abertura<br/>
+                                                            • 15-25%: Taxa resposta<br/>
+                                                            • 60%+: Excelente
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'sequencia' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - SEQUÊNCIA EMAIL</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 15-25%: Taxa de abertura</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 2-5%: Taxa de clique</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 10-20%: Conversão final da sequência</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Sequência de Emails:</strong><br/>
+                                                            • 15-25%: Taxa abertura<br/>
+                                                            • 2-5%: Taxa clique<br/>
+                                                            • 10-20%: Conversão final
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'quiz' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - QUIZ</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Taxa de conclusão do quiz</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 50-70%: Taxa de captura de email</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• Aumenta engajamento em 2-3x</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas Quiz:</strong><br/>
+                                                            • 30-50%: Conclusão<br/>
+                                                            • 50-70%: Captura email<br/>
+                                                            • +2-3x: Engajamento
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'video' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - VÍDEO/VSL</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40-60%: Taxa de play</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Assistem até o final</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 5-15%: Conversão típica de VSL</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas Vídeo:</strong><br/>
+                                                            • 40-60%: Taxa play<br/>
+                                                            • 30-50%: Assistem final<br/>
+                                                            • 5-15%: Conversão típica
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'webinar' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - WEBINAR</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Taxa de comparecimento</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 10-25%: Conversão em vendas</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40%+: Webinars de alta conversão</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas Webinar:</strong><br/>
+                                                            • 30-50%: Comparecimento<br/>
+                                                            • 10-25%: Conversão<br/>
+                                                            • 40%+: Alta conversão
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'countdown' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - COUNTDOWN</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• Aumenta conversão em 20-40%</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• Reduz tempo de decisão em 60%</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• Ideal: 24-72h de urgência</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Impacto Countdown:</strong><br/>
+                                                            • +20-40%: Aumento conversão<br/>
+                                                            • -60%: Tempo decisão<br/>
+                                                            • Ideal: 24-72h urgência
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'call' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - CALL/CONSULTA</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 20-40%: Taxa de agendamento</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 60-80%: Comparecimento na call</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 30-50%: Fechamento na call</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas Call:</strong><br/>
+                                                            • 20-40%: Agendamento<br/>
+                                                            • 60-80%: Comparecimento<br/>
+                                                            • 30-50%: Fechamento
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                             {selectedElementData.type === 'membros' && (
-                                                <div className="benchmark-box">
-                                                    <h4>📋 BENCHMARKS - ÁREA MEMBROS</h4>
-                                                    <div className="benchmark-item">
-                                                        <span>• 70-90%: Taxa de acesso inicial</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 40-60%: Conclusão do conteúdo</span>
-                                                    </div>
-                                                    <div className="benchmark-item">
-                                                        <span>• 80-95%: Retenção mensal</span>
+                                                <div className="benchmark-compact">
+                                                    <h4>📋 Benchmarks</h4>
+                                                    <div className="tooltip-container">
+                                                        <span className="info-icon">i</span>
+                                                        <div className="tooltip-content wide">
+                                                            <strong>Métricas Membros:</strong><br/>
+                                                            • 70-90%: Acesso inicial<br/>
+                                                            • 40-60%: Conclusão<br/>
+                                                            • 80-95%: Retenção mensal
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -4301,19 +4360,17 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         </div>
                                                     )}
 
-                                                    <div className="benchmark-box">
-                                                        <h4>📋 BENCHMARKS - RETARGETING</h4>
-                                                        <div className="benchmark-item">
-                                                            <span>• 3-8%: CTR típico (melhor que cold traffic)</span>
-                                                        </div>
-                                                        <div className="benchmark-item">
-                                                            <span>• CPM 30-50% menor que tráfego frio</span>
-                                                        </div>
-                                                        <div className="benchmark-item">
-                                                            <span>• 10-30%: Conversão de retargeting</span>
-                                                        </div>
-                                                        <div className="benchmark-item">
-                                                            <span>• CPC 50-70% menor que cold traffic</span>
+                                                    <div className="benchmark-compact">
+                                                        <h4>📋 Benchmarks</h4>
+                                                        <div className="tooltip-container">
+                                                            <span className="info-icon">i</span>
+                                                            <div className="tooltip-content wide">
+                                                                <strong>Métricas Retargeting:</strong><br/>
+                                                                • 3-8%: CTR típico<br/>
+                                                                • CPM 30-50% menor<br/>
+                                                                • 10-30%: Conversão<br/>
+                                                                • CPC 50-70% menor
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </>
