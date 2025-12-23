@@ -1299,6 +1299,32 @@ HTML_CONTENT = """<!DOCTYPE html>
             });
         };
 
+        // API: Duplicar funil
+        const apiDuplicateFunnel = async (funnelId) => {
+            // Busca o funil original
+            const originalFunnel = await apiCall(`/api/funnels/${funnelId}`);
+
+            if (!originalFunnel || !originalFunnel.funnel) {
+                throw new Error('Funil não encontrado');
+            }
+
+            const funnel = originalFunnel.funnel;
+
+            // Cria cópia com novo nome
+            const copyName = `${funnel.name} (Cópia)`;
+
+            // Cria o novo funil
+            return await apiCall('/api/funnels', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: copyName,
+                    icon: funnel.icon,
+                    elements: funnel.elements,
+                    connections: funnel.connections
+                })
+            });
+        };
+
         // ==================== FIM API HELPERS ====================
 
         // Função para carregar configurações do sistema
@@ -4219,6 +4245,20 @@ HTML_CONTENT = """<!DOCTYPE html>
                 }
             };
 
+            const duplicateFunnel = async (id, e) => {
+                e.stopPropagation();
+                try {
+                    const result = await apiDuplicateFunnel(id);
+                    if (result && result.funnel) {
+                        setFunnels([...funnels, result.funnel]);
+                        alert('✓ Funil duplicado com sucesso!');
+                    }
+                } catch (error) {
+                    console.error('Erro ao duplicar funil:', error);
+                    alert('✗ Erro ao duplicar funil');
+                }
+            };
+
             return (
                 <div style={{ minHeight: '100vh', maxHeight: '100vh', overflow: 'auto', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '40px 20px', position: 'relative' }}>
                     <div style={{
@@ -4321,13 +4361,53 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>📊 Meus Funis</h2>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                                     {funnels.map(f => (
-                                        <div key={f.id} onClick={() => onSelectFunnel(f.id)} style={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '12px', padding: '20px', cursor: 'pointer', position: 'relative' }}>
+                                        <div key={f.id} onClick={() => onSelectFunnel(f.id)} style={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '12px', padding: '20px', cursor: 'pointer', position: 'relative', transition: 'all 0.2s' }}
+                                            onMouseOver={(e) => { e.currentTarget.style.borderColor = '#667eea'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.15)'; }}
+                                            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                                 <span style={{ fontSize: '32px' }}>{f.icon}</span>
                                                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', flex: 1 }}>{f.name}</h3>
-                                                <button onClick={(e) => deleteFunnel(f.id, e)} style={{ padding: '8px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🗑️</button>
+                                                <button
+                                                    onClick={(e) => duplicateFunnel(f.id, e)}
+                                                    style={{
+                                                        padding: '8px 12px',
+                                                        backgroundColor: '#3b82f6',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '14px',
+                                                        fontWeight: '600',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#3b82f6'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                                    title="Duplicar funil"
+                                                >
+                                                    📋 Duplicar
+                                                </button>
+                                                <button
+                                                    onClick={(e) => deleteFunnel(f.id, e)}
+                                                    style={{
+                                                        padding: '8px',
+                                                        backgroundColor: '#ef4444',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#dc2626'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#ef4444'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                                    title="Deletar funil"
+                                                >
+                                                    🗑️
+                                                </button>
                                             </div>
-                                            <p style={{ fontSize: '12px', color: '#9ca3af' }}>{f.elements?.length || 0} elementos</p>
+                                            <p style={{ fontSize: '12px', color: '#9ca3af' }}>{f.elements?.length || 0} elementos • {f.connections?.length || 0} conexões</p>
                                         </div>
                                     ))}
                                 </div>
