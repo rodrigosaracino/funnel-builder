@@ -2130,30 +2130,29 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 // Para cada conexão, calcula a taxa de dropout
                 connections.forEach(conn => {
-                    const fromElement = elements.find(el => el.id === conn.from);
-                    const toElement = elements.find(el => el.id === conn.to);
+                    const fromElement = metrics[conn.from];
+                    const toElement = metrics[conn.to];
 
-                    if (fromElement && toElement && metrics[fromElement.id] && metrics[toElement.id]) {
-                        const fromVisitors = metrics[fromElement.id].calculatedMetrics?.visitors || 0;
-                        const toVisitors = metrics[toElement.id].calculatedMetrics?.visitors || 0;
+                    if (fromElement && toElement && fromElement.calculatedMetrics && toElement.calculatedMetrics) {
+                        // Usa 'visits' que é o campo correto nas métricas
+                        const fromVisitors = fromElement.calculatedMetrics.visits || 0;
+                        const toVisitors = toElement.calculatedMetrics.visits || 0;
 
-                        if (fromVisitors > 0) {
+                        if (fromVisitors > 0 && toVisitors < fromVisitors) {
                             const dropoutRate = ((fromVisitors - toVisitors) / fromVisitors) * 100;
                             const dropoutCount = fromVisitors - toVisitors;
 
-                            if (dropoutRate > 0) {
-                                bottlenecks.push({
-                                    fromId: fromElement.id,
-                                    toId: toElement.id,
-                                    fromName: fromElement.name,
-                                    toName: toElement.name,
-                                    fromVisitors: fromVisitors,
-                                    toVisitors: toVisitors,
-                                    dropoutCount: dropoutCount,
-                                    dropoutRate: dropoutRate,
-                                    conversionRate: 100 - dropoutRate
-                                });
-                            }
+                            bottlenecks.push({
+                                fromId: conn.from,
+                                toId: conn.to,
+                                fromName: fromElement.name,
+                                toName: toElement.name,
+                                fromVisitors: fromVisitors,
+                                toVisitors: toVisitors,
+                                dropoutCount: dropoutCount,
+                                dropoutRate: dropoutRate,
+                                conversionRate: 100 - dropoutRate
+                            });
                         }
                     }
                 });
