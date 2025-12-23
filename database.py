@@ -71,9 +71,90 @@ class Database:
             )
         ''')
 
+        # Tabela de páginas de marketing
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS pages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL,
+                category TEXT DEFAULT 'landing',
+                description TEXT,
+                tags TEXT,
+                status TEXT DEFAULT 'active',
+                thumbnail_url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Tabela de testes/alterações em páginas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS page_tests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                page_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                test_type TEXT DEFAULT 'ab_test',
+                results TEXT,
+                metrics TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Tabela de UTMs
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS utms (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                utm_source TEXT NOT NULL,
+                utm_medium TEXT NOT NULL,
+                utm_campaign TEXT NOT NULL,
+                utm_content TEXT,
+                utm_term TEXT,
+                tags TEXT,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+
+        # Tabela de métricas de páginas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS page_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                page_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                impressions INTEGER DEFAULT 0,
+                clicks INTEGER DEFAULT 0,
+                conversions INTEGER DEFAULT 0,
+                avg_time_on_page REAL DEFAULT 0,
+                bounce_rate REAL DEFAULT 0,
+                utm_id INTEGER,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (utm_id) REFERENCES utms(id) ON DELETE SET NULL
+            )
+        ''')
+
         # Índices para performance
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_funnels_user_id ON funnels(user_id)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_pages_user_id ON pages(user_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_page_tests_page_id ON page_tests(page_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_utms_user_id ON utms(user_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_page_metrics_page_id ON page_metrics(page_id)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_page_metrics_date ON page_metrics(date)')
 
         conn.commit()
         conn.close()
@@ -267,6 +348,391 @@ class Database:
         conn.close()
         return rows_affected > 0
 
+    # ==================== OPERAÇÕES DE PÁGINAS ====================
+
+    def create_page(self, user_id: int, name: str, url: str, category: str = 'landing',
+                   description: str = None, tags: List[str] = None, status: str = 'active',
+                   thumbnail_url: str = None) -> int:
+        """Cria uma nova página de marketing"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        tags_json = json.dumps(tags or [])
+
+        cursor.execute('''
+            INSERT INTO pages (user_id, name, url, category, description, tags, status, thumbnail_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, name, url, category, description, tags_json, status, thumbnail_url))
+
+        page_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return page_id
+
+    def get_pages_by_user(self, user_id: int, category: str = None, status: str = None) -> List[Dict]:
+        """Retorna todas as páginas de um usuário"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        query = 'SELECT * FROM pages WHERE user_id = ?'
+        params = [user_id]
+
+        if category:
+            query += ' AND category = ?'
+            params.append(category)
+
+        if status:
+            query += ' AND status = ?'
+            params.append(status)
+
+        query += ' ORDER BY updated_at DESC'
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+
+        pages = []
+        for row in rows:
+            pages.append({
+                'id': row['id'],
+                'user_id': row['user_id'],
+                'name': row['name'],
+                'url': row['url'],
+                'category': row['category'],
+                'description': row['description'],
+                'tags': json.loads(row['tags']) if row['tags'] else [],
+                'status': row['status'],
+                'thumbnail_url': row['thumbnail_url'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            })
+
+        return pages
+
+    def get_page_by_id(self, page_id: int, user_id: int) -> Optional[Dict]:
+        """Retorna uma página específica"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM pages WHERE id = ? AND user_id = ?', (page_id, user_id))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return {
+                'id': row['id'],
+                'user_id': row['user_id'],
+                'name': row['name'],
+                'url': row['url'],
+                'category': row['category'],
+                'description': row['description'],
+                'tags': json.loads(row['tags']) if row['tags'] else [],
+                'status': row['status'],
+                'thumbnail_url': row['thumbnail_url'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            }
+        return None
+
+    def update_page(self, page_id: int, user_id: int, **kwargs) -> bool:
+        """Atualiza uma página"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            updates = []
+            params = []
+
+            for key, value in kwargs.items():
+                if key in ['name', 'url', 'category', 'description', 'status', 'thumbnail_url']:
+                    updates.append(f'{key} = ?')
+                    params.append(value)
+                elif key == 'tags':
+                    updates.append('tags = ?')
+                    params.append(json.dumps(value))
+
+            if not updates:
+                return False
+
+            updates.append('updated_at = CURRENT_TIMESTAMP')
+            query = f"UPDATE pages SET {', '.join(updates)} WHERE id = ? AND user_id = ?"
+            params.extend([page_id, user_id])
+
+            cursor.execute(query, params)
+            rows_affected = cursor.rowcount
+            conn.commit()
+            conn.close()
+
+            return rows_affected > 0
+        except Exception as e:
+            print(f"❌ Erro ao atualizar página: {e}")
+            return False
+
+    def delete_page(self, page_id: int, user_id: int) -> bool:
+        """Deleta uma página e seus dados relacionados"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM pages WHERE id = ? AND user_id = ?', (page_id, user_id))
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return rows_affected > 0
+
+    # ==================== OPERAÇÕES DE TESTES DE PÁGINA ====================
+
+    def create_page_test(self, page_id: int, user_id: int, date: str, title: str,
+                        description: str, test_type: str = 'ab_test', results: str = None,
+                        metrics: Dict = None) -> int:
+        """Cria um novo teste/alteração em uma página"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        metrics_json = json.dumps(metrics or {})
+
+        cursor.execute('''
+            INSERT INTO page_tests (page_id, user_id, date, title, description, test_type, results, metrics)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (page_id, user_id, date, title, description, test_type, results, metrics_json))
+
+        test_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return test_id
+
+    def get_page_tests(self, page_id: int, user_id: int) -> List[Dict]:
+        """Retorna todos os testes de uma página"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM page_tests
+            WHERE page_id = ? AND user_id = ?
+            ORDER BY date DESC
+        ''', (page_id, user_id))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        tests = []
+        for row in rows:
+            tests.append({
+                'id': row['id'],
+                'page_id': row['page_id'],
+                'user_id': row['user_id'],
+                'date': row['date'],
+                'title': row['title'],
+                'description': row['description'],
+                'test_type': row['test_type'],
+                'results': row['results'],
+                'metrics': json.loads(row['metrics']) if row['metrics'] else {},
+                'created_at': row['created_at']
+            })
+
+        return tests
+
+    def delete_page_test(self, test_id: int, user_id: int) -> bool:
+        """Deleta um teste de página"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM page_tests WHERE id = ? AND user_id = ?', (test_id, user_id))
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return rows_affected > 0
+
+    # ==================== OPERAÇÕES DE UTMs ====================
+
+    def create_utm(self, user_id: int, name: str, utm_source: str, utm_medium: str,
+                  utm_campaign: str, utm_content: str = None, utm_term: str = None,
+                  tags: List[str] = None, notes: str = None) -> int:
+        """Cria um novo conjunto de parâmetros UTM"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        tags_json = json.dumps(tags or [])
+
+        cursor.execute('''
+            INSERT INTO utms (user_id, name, utm_source, utm_medium, utm_campaign,
+                            utm_content, utm_term, tags, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, name, utm_source, utm_medium, utm_campaign, utm_content, utm_term, tags_json, notes))
+
+        utm_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return utm_id
+
+    def get_utms_by_user(self, user_id: int) -> List[Dict]:
+        """Retorna todas as UTMs de um usuário"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM utms
+            WHERE user_id = ?
+            ORDER BY updated_at DESC
+        ''', (user_id,))
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        utms = []
+        for row in rows:
+            utms.append({
+                'id': row['id'],
+                'user_id': row['user_id'],
+                'name': row['name'],
+                'utm_source': row['utm_source'],
+                'utm_medium': row['utm_medium'],
+                'utm_campaign': row['utm_campaign'],
+                'utm_content': row['utm_content'],
+                'utm_term': row['utm_term'],
+                'tags': json.loads(row['tags']) if row['tags'] else [],
+                'notes': row['notes'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            })
+
+        return utms
+
+    def get_utm_by_id(self, utm_id: int, user_id: int) -> Optional[Dict]:
+        """Retorna uma UTM específica"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM utms WHERE id = ? AND user_id = ?', (utm_id, user_id))
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return {
+                'id': row['id'],
+                'user_id': row['user_id'],
+                'name': row['name'],
+                'utm_source': row['utm_source'],
+                'utm_medium': row['utm_medium'],
+                'utm_campaign': row['utm_campaign'],
+                'utm_content': row['utm_content'],
+                'utm_term': row['utm_term'],
+                'tags': json.loads(row['tags']) if row['tags'] else [],
+                'notes': row['notes'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            }
+        return None
+
+    def update_utm(self, utm_id: int, user_id: int, **kwargs) -> bool:
+        """Atualiza uma UTM"""
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            updates = []
+            params = []
+
+            for key, value in kwargs.items():
+                if key in ['name', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'notes']:
+                    updates.append(f'{key} = ?')
+                    params.append(value)
+                elif key == 'tags':
+                    updates.append('tags = ?')
+                    params.append(json.dumps(value))
+
+            if not updates:
+                return False
+
+            updates.append('updated_at = CURRENT_TIMESTAMP')
+            query = f"UPDATE utms SET {', '.join(updates)} WHERE id = ? AND user_id = ?"
+            params.extend([utm_id, user_id])
+
+            cursor.execute(query, params)
+            rows_affected = cursor.rowcount
+            conn.commit()
+            conn.close()
+
+            return rows_affected > 0
+        except Exception as e:
+            print(f"❌ Erro ao atualizar UTM: {e}")
+            return False
+
+    def delete_utm(self, utm_id: int, user_id: int) -> bool:
+        """Deleta uma UTM"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM utms WHERE id = ? AND user_id = ?', (utm_id, user_id))
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return rows_affected > 0
+
+    # ==================== OPERAÇÕES DE MÉTRICAS DE PÁGINA ====================
+
+    def create_page_metrics(self, page_id: int, user_id: int, date: str,
+                           impressions: int = 0, clicks: int = 0, conversions: int = 0,
+                           avg_time_on_page: float = 0, bounce_rate: float = 0,
+                           utm_id: int = None, notes: str = None) -> int:
+        """Cria registro de métricas para uma página"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO page_metrics (page_id, user_id, date, impressions, clicks, conversions,
+                                     avg_time_on_page, bounce_rate, utm_id, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (page_id, user_id, date, impressions, clicks, conversions, avg_time_on_page, bounce_rate, utm_id, notes))
+
+        metric_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return metric_id
+
+    def get_page_metrics(self, page_id: int, user_id: int, start_date: str = None, end_date: str = None) -> List[Dict]:
+        """Retorna métricas de uma página"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+
+        query = 'SELECT * FROM page_metrics WHERE page_id = ? AND user_id = ?'
+        params = [page_id, user_id]
+
+        if start_date:
+            query += ' AND date >= ?'
+            params.append(start_date)
+
+        if end_date:
+            query += ' AND date <= ?'
+            params.append(end_date)
+
+        query += ' ORDER BY date DESC'
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+
+        metrics = []
+        for row in rows:
+            metrics.append({
+                'id': row['id'],
+                'page_id': row['page_id'],
+                'user_id': row['user_id'],
+                'date': row['date'],
+                'impressions': row['impressions'],
+                'clicks': row['clicks'],
+                'conversions': row['conversions'],
+                'avg_time_on_page': row['avg_time_on_page'],
+                'bounce_rate': row['bounce_rate'],
+                'utm_id': row['utm_id'],
+                'notes': row['notes'],
+                'created_at': row['created_at']
+            })
+
+        return metrics
+
+    def delete_page_metrics(self, metric_id: int, user_id: int) -> bool:
+        """Deleta registro de métricas"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM page_metrics WHERE id = ? AND user_id = ?', (metric_id, user_id))
+        rows_affected = cursor.rowcount
+        conn.commit()
+        conn.close()
+        return rows_affected > 0
+
     # ==================== UTILITÁRIOS ====================
 
     def get_stats(self) -> Dict:
@@ -280,11 +746,19 @@ class Database:
         cursor.execute('SELECT COUNT(*) as count FROM funnels')
         funnels_count = cursor.fetchone()['count']
 
+        cursor.execute('SELECT COUNT(*) as count FROM pages')
+        pages_count = cursor.fetchone()['count']
+
+        cursor.execute('SELECT COUNT(*) as count FROM utms')
+        utms_count = cursor.fetchone()['count']
+
         conn.close()
 
         return {
             'total_users': users_count,
-            'total_funnels': funnels_count
+            'total_funnels': funnels_count,
+            'total_pages': pages_count,
+            'total_utms': utms_count
         }
 
 

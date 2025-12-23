@@ -33,7 +33,11 @@
       "Bash(/dev/null)",
       "Bash(docker-compose ps:*)",
       "Bash(docker-compose logs:*)",
-      "Bash(docker-compose down:*)"
+      "Bash(docker-compose down:*)",
+      "Read(//Users/rodrigosaracino/Library/CloudStorage/GoogleDrive-rodrigosaracino@gmail.com/Meu Drive/Funnel Builder/**)",
+      "Bash(/opt/anaconda3/bin/python:*)",
+      "Read(//Users/rodrigosaracino/Library/CloudStorage/GoogleDrive-rodrigosaracino@gmail.com/**)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

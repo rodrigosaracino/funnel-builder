@@ -15,6 +15,13 @@ from models import User, Funnel
 from webhooks import webhook_manager
 from rate_limiter import rate_limiter
 from security_logger import security_logger
+from marketing_routes import (
+    handle_pages_list, handle_page_create, handle_page_get, handle_page_update, handle_page_delete,
+    handle_page_test_create, handle_page_test_delete,
+    handle_utms_list, handle_utm_create, handle_utm_get, handle_utm_update, handle_utm_delete,
+    handle_utm_generate_url,
+    handle_metrics_create, handle_metrics_list, handle_metrics_delete
+)
 import os
 
 # ==================== CONFIGURAÇÕES DE SEGURANÇA ====================
@@ -4511,6 +4518,73 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
             self._send_json({'funnel': funnel.to_dict()})
             return
 
+        # ==================== ROTAS DE MARKETING ====================
+
+        # API: Listar páginas
+        if self.path.startswith('/api/pages'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            # Se tem ID específico: GET /api/pages/:id
+            if '/' in self.path[11:]:  # Remove '/api/pages' e verifica se tem mais /
+                parts = self.path.split('/')
+
+                # GET /api/pages/:id/metrics
+                if len(parts) >= 5 and parts[4] == 'metrics':
+                    page_id = int(parts[3])
+                    # Parse query params
+                    query_params = {}
+                    if '?' in self.path:
+                        query_string = self.path.split('?')[1]
+                        query_params = urllib.parse.parse_qs(query_string)
+                        query_params = {k: v[0] for k, v in query_params.items()}
+
+                    status, response = handle_metrics_list(user.id, page_id, query_params)
+                    self._send_json(response, status)
+                    return
+
+                # GET /api/pages/:id
+                page_id = int(parts[3])
+                status, response = handle_page_get(user.id, page_id)
+                self._send_json(response, status)
+                return
+
+            # GET /api/pages (lista)
+            query_params = {}
+            if '?' in self.path:
+                query_string = self.path.split('?')[1]
+                query_params = urllib.parse.parse_qs(query_string)
+                query_params = {k: v[0] for k, v in query_params.items()}
+
+            status, response = handle_pages_list(user.id, query_params)
+            self._send_json(response, status)
+            return
+
+        # API: Listar UTMs
+        if self.path.startswith('/api/utms'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            # Se tem ID específico: GET /api/utms/:id
+            if '/' in self.path[10:]:  # Remove '/api/utms' e verifica se tem mais /
+                utm_id = int(self.path.split('/')[-1])
+                status, response = handle_utm_get(user.id, utm_id)
+                self._send_json(response, status)
+                return
+
+            # GET /api/utms (lista)
+            status, response = handle_utms_list(user.id)
+            self._send_json(response, status)
+            return
+
         # Página HTML principal
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
@@ -4676,6 +4750,112 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
                 }, 201)
                 return
 
+            # ==================== ROTAS POST DE MARKETING ====================
+
+            # API: Criar nova página
+            if self.path == '/api/pages':
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                data = self._read_json_body()
+                status, response = handle_page_create(user.id, data)
+                self._send_json(response, status)
+                return
+
+            # API: Adicionar teste a uma página
+            if self.path.startswith('/api/pages/') and '/tests' in self.path:
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                parts = self.path.split('/')
+                page_id = int(parts[3])
+                data = self._read_json_body()
+                status, response = handle_page_test_create(user.id, page_id, data)
+                self._send_json(response, status)
+                return
+
+            # API: Adicionar métricas a uma página
+            if self.path.startswith('/api/pages/') and '/metrics' in self.path:
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                parts = self.path.split('/')
+                page_id = int(parts[3])
+                data = self._read_json_body()
+                status, response = handle_metrics_create(user.id, page_id, data)
+                self._send_json(response, status)
+                return
+
+            # API: Criar nova UTM
+            if self.path == '/api/utms':
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                data = self._read_json_body()
+                status, response = handle_utm_create(user.id, data)
+                self._send_json(response, status)
+                return
+
+            # API: Gerar URL com UTM
+            if self.path.startswith('/api/utms/') and '/generate' in self.path:
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                parts = self.path.split('/')
+                utm_id = int(parts[3])
+                data = self._read_json_body()
+                status, response = handle_utm_generate_url(user.id, utm_id, data)
+                self._send_json(response, status)
+                return
+
             self._send_json({'error': 'Endpoint não encontrado'}, 404)
 
         except ValueError as e:
@@ -4735,6 +4915,38 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
                 self._send_json({'error': 'Erro ao atualizar funil'}, 500)
             return
 
+        # ==================== ROTAS PUT DE MARKETING ====================
+
+        # API: Atualizar página
+        if self.path.startswith('/api/pages/'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            page_id = int(self.path.split('/')[3])
+            data = self._read_json_body()
+            status, response = handle_page_update(user.id, page_id, data)
+            self._send_json(response, status)
+            return
+
+        # API: Atualizar UTM
+        if self.path.startswith('/api/utms/'):
+            token = self._get_token()
+            user = auth.get_user_from_token(token)
+
+            if not user:
+                self._send_json({'error': 'Não autenticado'}, 401)
+                return
+
+            utm_id = int(self.path.split('/')[3])
+            data = self._read_json_body()
+            status, response = handle_utm_update(user.id, utm_id, data)
+            self._send_json(response, status)
+            return
+
         self._send_json({'error': 'Endpoint não encontrado'}, 404)
 
     def do_DELETE(self):
@@ -4785,6 +4997,92 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
                     self._send_json({'success': True, 'message': 'Funil deletado'})
                 else:
                     self._send_json({'error': 'Erro ao deletar funil'}, 500)
+                return
+
+            # ==================== ROTAS DELETE DE MARKETING ====================
+
+            # API: Deletar página
+            if self.path.startswith('/api/pages/') and not '/tests' in self.path:
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                page_id = int(self.path.split('/')[3])
+                status, response = handle_page_delete(user.id, page_id)
+                self._send_json(response, status)
+                return
+
+            # API: Deletar teste de página
+            if self.path.startswith('/api/pages/tests/'):
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                test_id = int(self.path.split('/')[-1])
+                status, response = handle_page_test_delete(user.id, test_id)
+                self._send_json(response, status)
+                return
+
+            # API: Deletar métricas
+            if self.path.startswith('/api/metrics/'):
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                metric_id = int(self.path.split('/')[-1])
+                status, response = handle_metrics_delete(user.id, metric_id)
+                self._send_json(response, status)
+                return
+
+            # API: Deletar UTM
+            if self.path.startswith('/api/utms/'):
+                allowed, retry_after = rate_limiter.is_allowed(client_ip, 'api_write')
+                if not allowed:
+                    self._send_json({
+                        'error': f'Muitas requisições. Tente novamente em {retry_after} segundos.'
+                    }, 429)
+                    return
+
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                utm_id = int(self.path.split('/')[3])
+                status, response = handle_utm_delete(user.id, utm_id)
+                self._send_json(response, status)
                 return
 
             # API: Logout
