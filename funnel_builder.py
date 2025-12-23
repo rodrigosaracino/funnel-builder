@@ -1625,6 +1625,39 @@ HTML_CONTENT = """<!DOCTYPE html>
             const saveTimeoutRef = useRef(null);
             const initialLoadRef = useRef(false);
 
+            // Estados para páginas e UTMs
+            const [pages, setPages] = useState([]);
+            const [utms, setUtms] = useState([]);
+            const [showUtmGenerator, setShowUtmGenerator] = useState(false);
+
+            // Carrega páginas e UTMs
+            React.useEffect(() => {
+                loadPages();
+                loadUtms();
+            }, []);
+
+            const loadPages = async () => {
+                try {
+                    const data = await apiCall('/api/pages');
+                    if (data && data.pages) {
+                        setPages(data.pages);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar páginas:', error);
+                }
+            };
+
+            const loadUtms = async () => {
+                try {
+                    const data = await apiCall('/api/utms');
+                    if (data && data.utms) {
+                        setUtms(data.utms);
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar UTMs:', error);
+                }
+            };
+
             // Carrega o funil específico da API
             React.useEffect(() => {
                 if (funnelId) {
@@ -3016,6 +3049,126 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         <small className="form-help">Personalize a cor deste elemento ou use a cor padrão</small>
                                     </div>
 
+                                    {/* Seletor de Página */}
+                                    {['landing', 'vsl', 'checkout', 'vendas', 'squeeze', 'captura', 'upsell', 'downsell', 'webinar'].includes(selectedElementData.type) && (
+                                        <div className="form-group">
+                                            <label className="form-label">📄 Vincular Página Cadastrada</label>
+                                            <select
+                                                className="form-input"
+                                                value={selectedElementData.pageId || ''}
+                                                onChange={(e) => {
+                                                    const pageId = e.target.value;
+                                                    updateElementProperty('pageId', pageId ? parseInt(pageId) : null);
+
+                                                    // Se selecionou uma página, preenche a URL automaticamente
+                                                    if (pageId) {
+                                                        const page = pages.find(p => p.id === parseInt(pageId));
+                                                        if (page) {
+                                                            updateElementProperty('url', page.url);
+                                                            updateElementProperty('pageName', page.name);
+                                                        }
+                                                    }
+                                                }}
+                                                style={{ fontSize: '14px' }}
+                                            >
+                                                <option value="">Nenhuma página vinculada</option>
+                                                {pages.map(page => (
+                                                    <option key={page.id} value={page.id}>
+                                                        {page.name} ({page.category})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {selectedElementData.pageId && (
+                                                <small className="form-help" style={{ display: 'block', marginTop: '8px', color: '#10b981' }}>
+                                                    ✓ Página vinculada: {selectedElementData.pageName}
+                                                </small>
+                                            )}
+                                            {pages.length === 0 && (
+                                                <small className="form-help" style={{ display: 'block', marginTop: '8px', color: '#f59e0b' }}>
+                                                    💡 Cadastre páginas em Marketing &gt; Páginas
+                                                </small>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Gerador de UTM */}
+                                    {['landing', 'vsl', 'checkout', 'vendas', 'squeeze', 'captura', 'upsell', 'downsell', 'webinar'].includes(selectedElementData.type) && (
+                                        <div className="form-group">
+                                            <label className="form-label">🔗 Gerador de UTM</label>
+                                            {!showUtmGenerator ? (
+                                                <button
+                                                    className="form-button"
+                                                    style={{
+                                                        padding: '10px 16px',
+                                                        background: '#667eea',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '600',
+                                                        fontSize: '14px',
+                                                        width: '100%'
+                                                    }}
+                                                    onClick={() => setShowUtmGenerator(true)}
+                                                >
+                                                    ➕ Gerar UTM para esta página
+                                                </button>
+                                            ) : (
+                                                <UtmGeneratorInline
+                                                    elementUrl={selectedElementData.url || ''}
+                                                    onUtmCreated={(utmData) => {
+                                                        // Salva a UTM e atualiza a lista
+                                                        apiCall('/api/utms', {
+                                                            method: 'POST',
+                                                            body: JSON.stringify(utmData)
+                                                        }).then(() => {
+                                                            loadUtms();
+                                                            setShowUtmGenerator(false);
+                                                            alert('UTM criada com sucesso!');
+                                                        }).catch(err => {
+                                                            console.error('Erro ao criar UTM:', err);
+                                                            alert('Erro ao criar UTM');
+                                                        });
+                                                    }}
+                                                    onCancel={() => setShowUtmGenerator(false)}
+                                                />
+                                            )}
+
+                                            {/* Lista de UTMs existentes */}
+                                            {utms.length > 0 && (
+                                                <div style={{ marginTop: '12px' }}>
+                                                    <label style={{ fontSize: '13px', color: '#718096', display: 'block', marginBottom: '8px' }}>
+                                                        Ou selecione uma UTM existente:
+                                                    </label>
+                                                    <select
+                                                        className="form-input"
+                                                        onChange={(e) => {
+                                                            const utmId = e.target.value;
+                                                            if (utmId) {
+                                                                const utm = utms.find(u => u.id === parseInt(utmId));
+                                                                if (utm && selectedElementData.url) {
+                                                                    const utmUrl = `${selectedElementData.url}${selectedElementData.url.includes('?') ? '&' : '?'}utm_source=${utm.utm_source}&utm_medium=${utm.utm_medium}&utm_campaign=${utm.utm_campaign}${utm.utm_content ? '&utm_content=' + utm.utm_content : ''}${utm.utm_term ? '&utm_term=' + utm.utm_term : ''}`;
+
+                                                                    navigator.clipboard.writeText(utmUrl);
+                                                                    alert('URL com UTM copiada para a área de transferência!');
+                                                                }
+                                                            }
+                                                            e.target.value = '';
+                                                        }}
+                                                        style={{ fontSize: '13px' }}
+                                                    >
+                                                        <option value="">Selecione para copiar URL...</option>
+                                                        {utms.map(utm => (
+                                                            <option key={utm.id} value={utm.id}>
+                                                                {utm.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Campos específicos para TRÁFEGO */}
                                     {['trafego', 'google', 'facebook'].includes(selectedElementData.type) && !connections.some(conn => conn.to === selectedElementData.id) && (
                                         <>
@@ -4301,6 +4454,170 @@ HTML_CONTENT = """<!DOCTYPE html>
                         </div>
                     </div>
                 </div>
+            );
+        }
+
+        // ==================== UTM GENERATOR INLINE ====================
+
+        function UtmGeneratorInline({ elementUrl, onUtmCreated, onCancel }) {
+            const [formData, setFormData] = useState({
+                name: '',
+                utm_source: '',
+                utm_medium: '',
+                utm_campaign: '',
+                utm_content: '',
+                utm_term: '',
+                notes: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.utm_source || !formData.utm_medium || !formData.utm_campaign) {
+                    alert('Nome, Source, Medium e Campaign são obrigatórios');
+                    return;
+                }
+                onUtmCreated(formData);
+            };
+
+            const previewUrl = elementUrl ?
+                `${elementUrl}${elementUrl.includes('?') ? '&' : '?'}utm_source=${formData.utm_source || 'source'}&utm_medium=${formData.utm_medium || 'medium'}&utm_campaign=${formData.utm_campaign || 'campaign'}${formData.utm_content ? '&utm_content=' + formData.utm_content : ''}${formData.utm_term ? '&utm_term=' + formData.utm_term : ''}`
+                : 'Configure a URL do elemento primeiro';
+
+            return (
+                <form onSubmit={handleSubmit} style={{ fontSize: '13px' }}>
+                    <div style={{ marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            placeholder="Nome da campanha *"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            style={{
+                                width: '100%',
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            placeholder="Source * (ex: facebook)"
+                            value={formData.utm_source}
+                            onChange={(e) => setFormData({ ...formData, utm_source: e.target.value })}
+                            style={{
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Medium * (ex: cpc)"
+                            value={formData.utm_medium}
+                            onChange={(e) => setFormData({ ...formData, utm_medium: e.target.value })}
+                            style={{
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                    </div>
+                    <div style={{ marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            placeholder="Campaign * (ex: black_friday)"
+                            value={formData.utm_campaign}
+                            onChange={(e) => setFormData({ ...formData, utm_campaign: e.target.value })}
+                            style={{
+                                width: '100%',
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                        <input
+                            type="text"
+                            placeholder="Content (opcional)"
+                            value={formData.utm_content}
+                            onChange={(e) => setFormData({ ...formData, utm_content: e.target.value })}
+                            style={{
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                        <input
+                            type="text"
+                            placeholder="Term (opcional)"
+                            value={formData.utm_term}
+                            onChange={(e) => setFormData({ ...formData, utm_term: e.target.value })}
+                            style={{
+                                padding: '8px',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '6px',
+                                fontSize: '13px'
+                            }}
+                        />
+                    </div>
+
+                    {elementUrl && (
+                        <div style={{
+                            background: '#edf2f7',
+                            padding: '10px',
+                            borderRadius: '6px',
+                            marginBottom: '12px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            wordBreak: 'break-all',
+                            color: '#4a5568'
+                        }}>
+                            {previewUrl}
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            style={{
+                                flex: 1,
+                                padding: '8px',
+                                background: '#e2e8f0',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '600'
+                            }}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            style={{
+                                flex: 1,
+                                padding: '8px',
+                                background: '#667eea',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '600'
+                            }}
+                        >
+                            Criar UTM
+                        </button>
+                    </div>
+                </form>
             );
         }
 
