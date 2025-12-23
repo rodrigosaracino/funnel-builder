@@ -1370,7 +1370,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                 elements: [
                     { type: 'email', name: 'Email', icon: '✉️', color: 'color-email' },
                     { type: 'sequencia', name: 'Sequência Email', icon: '📧', color: 'color-sequencia' },
-                    { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' }
+                    { type: 'whatsapp', name: 'WhatsApp', icon: '📱', color: 'color-whatsapp' },
+                    { type: 'recuperacao', name: 'Recuperação de Carrinho', icon: '🛒', color: 'color-recuperacao' }
                 ]
             },
             {
@@ -1427,6 +1428,7 @@ HTML_CONTENT = """<!DOCTYPE html>
             'email': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
             'sequencia': 'linear-gradient(135deg, #5f72bd 0%, #9b23ea 100%)',
             'whatsapp': 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+            'recuperacao': 'linear-gradient(135deg, #ff6b6b 0%, #ffa502 100%)',
 
             // Engajamento - Laranja/Amarelo
             'quiz': 'linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)',
@@ -1896,9 +1898,9 @@ HTML_CONTENT = """<!DOCTYPE html>
                         const conversionRate = conn.conversion || 0;
                         let childTraffic = 0;
 
-                        // Se o elemento filho é um Downsell, envia os NÃO convertidos
-                        if (childElement && childElement.type === 'downsell') {
-                            // Downsell recebe quem NÃO converteu (pageViews - leads)
+                        // Se o elemento filho é um Downsell ou Recuperação, envia os NÃO convertidos
+                        if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
+                            // Downsell/Recuperação recebe quem NÃO converteu (pageViews - leads)
                             const nonConverted = pageViews - leads;
                             childTraffic = Math.round(nonConverted * (conversionRate / 100));
                         } else {
@@ -1973,8 +1975,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                             const conversionRate = conn.conversion || 0;
                             let childTraffic = 0;
 
-                            // Se o elemento filho é um Downsell, envia os NÃO convertidos
-                            if (childElement && childElement.type === 'downsell') {
+                            // Se o elemento filho é um Downsell ou Recuperação, envia os NÃO convertidos
+                            if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
                                 const nonConverted = pageViews - leads;
                                 childTraffic = Math.round(nonConverted * (conversionRate / 100));
                             } else {
@@ -2047,7 +2049,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 const childConversionRate = conn.conversion || 0;
                                 let childTraffic = 0;
 
-                                if (childElement && childElement.type === 'downsell') {
+                                if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
                                     const nonConverted = pageViews - leads;
                                     childTraffic = Math.round(nonConverted * (childConversionRate / 100));
                                 } else {
@@ -3982,6 +3984,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                     <div className="benchmark-item">
                                                         <span>• 50%+: Downsell muito atrativo!</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {selectedElementData.type === 'recuperacao' && (
+                                                <div className="benchmark-box">
+                                                    <h4>📋 BENCHMARKS - RECUPERAÇÃO DE CARRINHO</h4>
+                                                    <div className="benchmark-item">
+                                                        <span>• 5-10%: Taxa típica de recuperação</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 10-20%: Boa campanha de recuperação</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>• 20%+: Excelente estratégia!</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>💡 Envie 3-5 emails em 7-14 dias</span>
+                                                    </div>
+                                                    <div className="benchmark-item">
+                                                        <span>💡 Use urgência e desconto progressivo</span>
                                                     </div>
                                                 </div>
                                             )}
