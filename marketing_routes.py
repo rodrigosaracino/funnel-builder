@@ -36,8 +36,9 @@ def handle_page_create(user_id: int, data: Dict) -> tuple:
             return 400, {'success': False, 'error': 'Nome e URL são obrigatórios'}
 
         url = data.get('url')
-        if not validate_url(url):
-            return 400, {'success': False, 'error': 'URL inválida'}
+        is_valid, error_msg = validate_url(url, optional=False)
+        if not is_valid:
+            return 400, {'success': False, 'error': error_msg or 'URL inválida'}
 
         # Criar página
         page_id = db.create_page(
@@ -100,8 +101,10 @@ def handle_page_update(user_id: int, page_id: int, data: Dict) -> tuple:
             return 404, {'success': False, 'error': 'Página não encontrada'}
 
         # Validar URL se fornecida
-        if 'url' in data and not validate_url(data['url']):
-            return 400, {'success': False, 'error': 'URL inválida'}
+        if 'url' in data:
+            is_valid, error_msg = validate_url(data['url'], optional=False)
+            if not is_valid:
+                return 400, {'success': False, 'error': error_msg or 'URL inválida'}
 
         # Atualizar
         success = db.update_page(page_id, user_id, **data)
@@ -324,8 +327,9 @@ def handle_utm_generate_url(user_id: int, utm_id: int, data: Dict) -> tuple:
         if not base_url:
             return 400, {'success': False, 'error': 'URL base é obrigatória'}
 
-        if not validate_url(base_url):
-            return 400, {'success': False, 'error': 'URL base inválida'}
+        is_valid, error_msg = validate_url(base_url, optional=False)
+        if not is_valid:
+            return 400, {'success': False, 'error': error_msg or 'URL base inválida'}
 
         # Gerar URL
         utm = UTM.from_dict(utm_data)

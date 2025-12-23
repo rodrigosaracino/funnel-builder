@@ -480,17 +480,97 @@ Para dúvidas, sugestões ou reportar bugs:
 
 ---
 
+## 📊 Gerenciamento de Marketing Digital
+
+### Visão Geral
+O sistema inclui gerenciamento completo de marketing digital com:
+- **Páginas**: Cadastre e organize suas landing pages, VSLs, checkouts
+- **UTMs**: Gerador de parâmetros UTM para rastreamento de campanhas
+- **Testes A/B**: Histórico de alterações e testes em cada página
+- **Métricas**: Impressões, cliques e conversões
+
+### Como Usar
+
+**Acessar o Gerenciador:**
+1. No dashboard principal, clique em "Gerenciador de Marketing"
+2. Use as abas "Páginas" e "UTMs" para navegar
+
+**Cadastrar Página:**
+1. Aba "Páginas" → Clique em "Nova Página"
+2. Preencha: Nome, URL, Categoria, Descrição, Tags
+3. Clique em "Criar Página"
+
+**Vincular Página ao Funil:**
+1. No editor do funil, clique em um elemento de página
+2. No painel lateral, selecione "Vincular Página Cadastrada"
+3. Escolha a página desejada
+4. A URL será automaticamente preenchida
+
+**Criar UTM:**
+1. Aba "UTMs" → Clique em "Nova UTM"
+2. Preencha os parâmetros (source, medium, campaign, etc.)
+3. Dentro do editor de funil, clique em "Criar UTM" no elemento
+4. Preencha os dados e visualize a URL gerada
+5. Clique na URL para copiar automaticamente
+
+### API de Marketing
+
+**Base URL:** `http://localhost:8000/api`
+
+Todos os endpoints requerem autenticação:
+```
+Authorization: Bearer {seu_token}
+```
+
+**Principais Endpoints:**
+
+**Páginas:**
+- `GET /pages` - Listar páginas
+- `POST /pages` - Criar página
+- `GET /pages/:id` - Detalhes da página
+- `PUT /pages/:id` - Atualizar página
+- `DELETE /pages/:id` - Deletar página
+
+**UTMs:**
+- `GET /utms` - Listar UTMs
+- `POST /utms` - Criar UTM
+- `POST /utms/:id/generate` - Gerar URL com parâmetros UTM
+
+**Métricas:**
+- `POST /pages/:id/metrics` - Adicionar métricas
+- `GET /pages/:id/metrics` - Listar métricas
+
+**Testes:**
+- `POST /pages/:id/tests` - Adicionar teste A/B
+- `DELETE /pages/tests/:id` - Deletar teste
+
+Para documentação completa da API, execute:
+```bash
+bash test_marketing_api.sh
+```
+
+---
+
 ## 🔮 Roadmap
 
+### ✅ Versão 1.0 (Implementado)
+- [x] Editor visual de funis
+- [x] Templates prontos
+- [x] Cálculo automático de métricas
+- [x] Gerenciamento de páginas e UTMs
+- [x] Análise de gargalos
+- [x] Duplicação de funis
+- [x] Sistema de autenticação
+
 ### Versão 1.1 (Planejado)
-- [ ] Export para PDF
-- [ ] Compartilhamento de funis
-- [ ] Mais templates (Lançamento PLF, Lead Magnet)
+- [ ] Export para PDF/Imagem
+- [ ] Dashboard de analytics avançado
+- [ ] Mais templates (PLF, Lead Magnet)
 - [ ] Temas dark/light
 
 ### Versão 1.2 (Futuro)
-- [ ] Integração com APIs (Facebook, Google)
-- [ ] Relatórios avançados
+- [ ] Integração com Facebook Ads API
+- [ ] Integração com Google Analytics
 - [ ] Colaboração em tempo real
 - [ ] Mobile responsivo
 
@@ -503,5 +583,5 @@ Se este projeto foi útil para você, considere dar uma ⭐ no GitHub!
 ---
 
 **Versão:** 1.0
-**Última Atualização:** Outubro 2024
+**Última Atualização:** Dezembro 2024
 **Status:** ✅ Estável
