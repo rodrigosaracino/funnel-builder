@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: funnel-builder-app
-    ports:
-      - "8000:8000"
+    networks:
+      - traefik
     volumes:
       # Persiste o banco de dados SQLite
       - funnel-data:/app/data
@@ -22,7 +22,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.funnelbuilder.rule=Host(`funnelbuilder.amzcursos.com`)"
+      - "traefik.http.routers.funnelbuilder.entrypoints=websecure"
+      - "traefik.http.routers.funnelbuilder.tls.certresolver=letsencrypt"
+      - "traefik.http.services.funnelbuilder.loadbalancer.server.port=8000"
 
 volumes:
   funnel-data:
     driver: local
+
+networks:
+  traefik:
+    external: true
