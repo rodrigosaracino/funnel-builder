@@ -6,7 +6,7 @@ Registra eventos de segurança em formato estruturado (JSON)
 import logging
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 
 
@@ -57,7 +57,7 @@ class SecurityLogger:
             data: Dados do evento
         """
         log_entry = {
-            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'timestamp': datetime.now(timezone.utc).isoformat() + 'Z',
             'event_type': event_type,
             'level': level,
             **data
@@ -286,9 +286,7 @@ class SecurityLogger:
             Número de falhas
         """
         try:
-            from datetime import timedelta
-
-            cutoff_time = datetime.utcnow() - timedelta(minutes=minutes)
+            cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=minutes)
             count = 0
 
             with open(self.log_file, 'r', encoding='utf-8') as f:

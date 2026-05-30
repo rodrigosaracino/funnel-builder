@@ -37,7 +37,11 @@
       "Read(//Users/rodrigosaracino/Library/CloudStorage/GoogleDrive-rodrigosaracino@gmail.com/Meu Drive/Funnel Builder/**)",
       "Bash(/opt/anaconda3/bin/python:*)",
       "Read(//Users/rodrigosaracino/Library/CloudStorage/GoogleDrive-rodrigosaracino@gmail.com/**)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(timeout 5 python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(git tag:*)",
+      "Bash(timeout 3 python3:*)"
     ],
     "deny": [],
     "ask": []

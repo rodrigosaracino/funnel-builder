@@ -495,6 +495,45 @@ HTML_CONTENT = """<!DOCTYPE html>
             transition: none !important;
         }
 
+        /* ===== Modo de apresentação (visão limpa, estilo Funnelytics) ===== */
+        .funnel-element.presentation {
+            cursor: default;
+            width: 150px;
+        }
+
+        .funnel-element.presentation:hover {
+            transform: none;
+            box-shadow: 0 6px 12px -2px rgb(0 0 0 / 0.12);
+        }
+
+        .element-presentation {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 22px 16px;
+            border-radius: 12px;
+        }
+
+        .element-presentation-icon {
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.22);
+            border-radius: 14px;
+        }
+
+        .element-presentation-name {
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+            line-height: 1.25;
+            white-space: normal;
+        }
+
         .element-header {
             display: flex;
             align-items: center;
@@ -676,14 +715,27 @@ HTML_CONTENT = """<!DOCTYPE html>
             z-index: 1;
         }
 
+        .connection-hit-area {
+            stroke: transparent;
+            stroke-width: 22;
+            fill: none;
+            cursor: pointer;
+            pointer-events: stroke;
+        }
+
         .connection-line {
             stroke: #94A3B8;
             stroke-width: 2;
             fill: none;
             marker-end: url(#arrowhead);
             cursor: pointer;
-            pointer-events: stroke;
+            pointer-events: none;
             transition: all 0.2s ease;
+        }
+
+        .connection-hit-area:hover + .connection-line {
+            stroke: #64748B;
+            stroke-width: 3;
         }
 
         .connection-line:hover {
@@ -1883,6 +1935,14 @@ HTML_CONTENT = """<!DOCTYPE html>
             );
         }
 
+        // Gera IDs numéricos únicos mesmo quando vários itens são criados no mesmo
+        // milissegundo (Date.now() sozinho colidia e quebrava seleção/deleção).
+        let __idSeq = 0;
+        const genId = () => {
+            __idSeq = (__idSeq + 1) % 10000;
+            return Date.now() * 10000 + __idSeq;
+        };
+
         function FunnelBuilder({ funnelId, onBack }) {
             const [elements, setElements] = useState([]);
             const [connections, setConnections] = useState([]);
@@ -1962,7 +2022,6 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 // Agenda novo salvamento após 2 segundos de inatividade
                 saveTimeoutRef.current = setTimeout(() => {
-                    console.log('💾 Salvando funil automaticamente...');
                     saveFunnel();
                 }, 2000);
 
@@ -1978,7 +2037,12 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [showBottleneckAnalysis, setShowBottleneckAnalysis] = useState(false);
 
             const saveFunnel = async () => {
-                if (saving) return;
+                // Se já há um save em andamento, reagenda para não perder mudanças
+                if (saving) {
+                    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                    saveTimeoutRef.current = setTimeout(() => saveFunnel(), 500);
+                    return;
+                }
                 setSaving(true);
                 setSaveSuccess(false);
 
@@ -1987,7 +2051,6 @@ HTML_CONTENT = """<!DOCTYPE html>
                         elements,
                         connections
                     });
-                    console.log('✅ Funil salvo automaticamente');
                     setSaveSuccess(true);
                     setTimeout(() => setSaveSuccess(false), 2000);
                 } catch (error) {
@@ -2015,7 +2078,32 @@ HTML_CONTENT = """<!DOCTYPE html>
             const [isPanning, setIsPanning] = useState(false);
             const [panStart, setPanStart] = useState({ x: 0, y: 0 });
             const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+            // Modo de apresentação (estilo Funnelytics): esconde números e mostra
+            // os elementos como ícones limpos, para mostrar o funil a um cliente.
+            const [presentationMode, setPresentationMode] = useState(false);
             const canvasRef = useRef(null);
+
+            // Atalho de teclado: Delete/Backspace apaga a conexão ou o elemento selecionado
+            React.useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+                    const tag = (e.target.tagName || '').toUpperCase();
+                    if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
+                    if (selectedConnection) {
+                        e.preventDefault();
+                        setConnections(prev => prev.filter(c => c.id !== selectedConnection));
+                        setSelectedConnection(null);
+                    } else if (selectedElement) {
+                        e.preventDefault();
+                        setElements(prev => prev.filter(el => el.id !== selectedElement));
+                        setConnections(prev => prev.filter(c => c.from !== selectedElement && c.to !== selectedElement));
+                        setSelectedElement(null);
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [selectedConnection, selectedElement]);
 
             const calculateMetrics = () => {
                 const elementMap = {};
@@ -2027,42 +2115,41 @@ HTML_CONTENT = """<!DOCTYPE html>
                     };
                 });
 
-                // Mapeia conexões com suas taxas de conversão
+                // Conta quantos "pais" cada elemento tem (in-degree) para processar em
+                // ordem topológica. Retargeting com métricas próprias age como fonte
+                // independente, então conexões de entrada nele NÃO contam como dependência.
+                const remainingParents = {};
+                elements.forEach(el => { remainingParents[el.id] = 0; });
+
+                const isIndependentSource = (el) =>
+                    el && el.type === 'retargeting' && (el.clicks || 0) > 0;
+
                 connections.forEach(conn => {
-                    if (elementMap[conn.from]) {
+                    if (elementMap[conn.from] && elementMap[conn.to]) {
                         elementMap[conn.from].childConnections.push(conn);
+                        if (!isIndependentSource(elementMap[conn.to])) {
+                            remainingParents[conn.to] += 1;
+                        }
                     }
                 });
 
-                const calculateForElement = (id, inputTraffic = null, parentInvestment = 0) => {
-                    const element = elementMap[id];
-                    if (!element) return null;
+                // Calcula as métricas de um elemento a partir do tráfego já acumulado
+                // (ou das próprias métricas, se for fonte de tráfego/raiz).
+                const computeElementMetrics = (element) => {
+                    const isTrafficSource = ['trafego', 'google', 'facebook', 'retargeting'].includes(element.type);
+                    const actsAsSource = isTrafficSource && (element.clicks || 0) > 0;
 
-                    // Retargeting com métricas próprias ignora tráfego de entrada (funciona como fonte independente)
-                    const isRetargetingWithMetrics = element.type === 'retargeting' && element.clicks > 0;
-
-                    // Se recebe tráfego de entrada E não é retargeting com métricas, acumula no array
-                    if (inputTraffic !== null && !isRetargetingWithMetrics) {
-                        element.incomingTraffic.push({
-                            traffic: inputTraffic,
-                            investment: parentInvestment
-                        });
-                        // Não calcula ainda, apenas acumula
-                        return;
-                    }
-
-                    let visits = 0;  // Pessoas que chegaram
-                    let pageViews = 0;  // Pessoas que visualizaram a página
-                    let leads = 0;  // Pessoas convertidas
+                    let visits = 0;       // Pessoas que chegaram
+                    let pageViews = 0;    // Pessoas que visualizaram a página
+                    let leads = 0;        // Pessoas convertidas
                     let investment = 0;
                     let cpm = 0;
                     let ctr = 0;
                     let costPerLead = 0;
+                    let cost = 0;
 
-                    // Se é elemento raiz (sem inputTraffic), calcula a partir de impressões/cliques
-                    const isTrafficSource = ['trafego', 'google', 'facebook', 'retargeting'].includes(element.type);
-                    if (isTrafficSource && element.clicks > 0) {
-                        // Para retargeting, usa investment ou retargetingInvestment
+                    if (actsAsSource) {
+                        // Fonte de tráfego: calcula a partir de impressões/cliques
                         investment = element.type === 'retargeting'
                             ? (element.investment || element.retargetingInvestment || 0)
                             : (element.investment || 0);
@@ -2070,30 +2157,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                         const impressions = element.impressions || 0;
                         const clicks = element.clicks || 0;
 
-                        visits = clicks; // Visitas = número de cliques
-                        pageViews = clicks; // No elemento raiz, visitas = pageViews
-                        leads = clicks; // No elemento raiz, todos são leads potenciais
+                        visits = clicks;
+                        pageViews = clicks;
+                        leads = clicks;
 
-                        // Calcula CPM (Custo por Mil Impressões)
                         cpm = impressions > 0 ? (investment / impressions) * 1000 : 0;
-
-                        // Calcula CTR (Click Through Rate)
                         ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-
-                        // Calcula Custo por Lead/Clique
                         costPerLead = clicks > 0 ? investment / clicks : 0;
+                        cost = investment; // dinheiro investido na fonte
                     } else if (element.incomingTraffic.length > 0) {
-                        // Se recebe tráfego de múltiplas fontes, soma tudo
+                        // Recebe tráfego de uma ou mais fontes: soma tudo
                         visits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
                         investment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
 
-                        // Aplica taxa de visualização de página
                         const pageViewRate = element.pageViewRate || 100;
                         pageViews = Math.round(visits * (pageViewRate / 100));
 
-                        // Aplica taxa de conversão do elemento
                         const conversionRate = element.conversionRate || 0;
                         leads = Math.round(pageViews * (conversionRate / 100));
+                        // Elementos que recebem tráfego não adicionam novo custo de mídia
+                        cost = 0;
                     }
 
                     const price = element.price || 0;
@@ -2112,9 +2195,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                         revenue += orderBumpRevenue;
                     }
 
-                    // Custo total é o investimento inicial (apenas para elementos raiz)
-                    const totalCost = inputTraffic === null ? investment : 0;
-                    const profit = revenue - totalCost;
+                    // Retargeting sempre carrega seu próprio custo de mídia, mesmo quando
+                    // recebe tráfego de outro elemento (evita perder esse investimento).
+                    if (element.type === 'retargeting' && !actsAsSource) {
+                        const retSpend = element.investment || element.retargetingInvestment || 0;
+                        cost += retSpend;
+                        investment += retSpend;
+                    }
+
+                    const profit = revenue - cost;
 
                     element.calculatedMetrics = {
                         visits,
@@ -2122,7 +2211,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                         leads,
                         revenue,
                         profit,
-                        cost: totalCost,
+                        cost,
                         investment,
                         cpm,
                         ctr,
@@ -2131,183 +2220,73 @@ HTML_CONTENT = """<!DOCTYPE html>
                         orderBumpRevenue
                     };
 
-                    // Propaga para elementos filhos usando a taxa de conversão da conexão
+                    return element.calculatedMetrics;
+                };
+
+                // Empurra o tráfego de um elemento já calculado para seus filhos.
+                const propagateToChildren = (element) => {
+                    const m = element.calculatedMetrics;
                     element.childConnections.forEach(conn => {
                         const childElement = elementMap[conn.to];
-                        const conversionRate = conn.conversion || 0;
-                        let childTraffic = 0;
+                        if (!childElement) return;
+                        // Retargeting independente ignora tráfego de entrada
+                        if (isIndependentSource(childElement)) return;
 
-                        // Se o elemento filho é um Downsell ou Recuperação, envia os NÃO convertidos
-                        if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
-                            // Downsell/Recuperação recebe quem NÃO converteu (pageViews - leads)
-                            const nonConverted = pageViews - leads;
+                        const conversionRate = conn.conversion || 0;
+                        let childTraffic;
+
+                        // Downsell/Recuperação recebem quem NÃO converteu; demais recebem os convertidos
+                        if (childElement.type === 'downsell' || childElement.type === 'recuperacao') {
+                            const nonConverted = m.pageViews - m.leads;
                             childTraffic = Math.round(nonConverted * (conversionRate / 100));
                         } else {
-                            // Elementos normais recebem os convertidos (leads)
-                            childTraffic = Math.round(leads * (conversionRate / 100));
+                            childTraffic = Math.round(m.leads * (conversionRate / 100));
                         }
 
-                        calculateForElement(conn.to, childTraffic, investment);
+                        childElement.incomingTraffic.push({
+                            traffic: childTraffic,
+                            investment: m.investment
+                        });
                     });
                 };
 
-                // FASE 1: Propaga o tráfego dos elementos raiz
-                elements.forEach(el => {
-                    const hasParent = connections.some(conn => conn.to === el.id);
-                    // Retargeting com métricas próprias (clicks > 0) funciona como raiz, mesmo com conexões de entrada
-                    const isRetargetingWithMetrics = el.type === 'retargeting' && el.clicks > 0;
-
-                    if (!hasParent || isRetargetingWithMetrics) {
-                        calculateForElement(el.id);
-                    }
+                // Processamento em ordem topológica (algoritmo de Kahn): um elemento só
+                // é finalizado depois que TODOS os seus pais foram processados. Isso
+                // garante que funis convergentes (vários caminhos chegando no mesmo
+                // elemento) somem todo o tráfego corretamente.
+                const queue = [];
+                Object.values(elementMap).forEach(el => {
+                    if (remainingParents[el.id] === 0) queue.push(el);
                 });
 
-                // FASE 2: Calcula métricas para todos os elementos que receberam tráfego
-                Object.values(elementMap).forEach(element => {
-                    if (element.incomingTraffic.length > 0 && !element.calculatedMetrics) {
-                        // Soma todo o tráfego recebido
-                        const totalVisits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
-                        const totalInvestment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
+                const processed = new Set();
+                while (queue.length > 0) {
+                    const element = queue.shift();
+                    if (processed.has(element.id)) continue;
+                    processed.add(element.id);
 
-                        // Aplica taxa de visualização de página
-                        const pageViewRate = element.pageViewRate || 100;
-                        const pageViews = Math.round(totalVisits * (pageViewRate / 100));
+                    computeElementMetrics(element);
+                    propagateToChildren(element);
 
-                        // Aplica taxa de conversão do elemento
-                        const conversionRate = element.conversionRate || 0;
-                        const leads = Math.round(pageViews * (conversionRate / 100));
-
-                        const price = element.price || 0;
-
-                        // Só gera receita se o elemento tiver a flag generatesRevenue ativada
-                        let revenue = element.generatesRevenue ? (leads * price) : 0;
-
-                        // Adiciona receita do Order Bump se estiver habilitado
-                        let orderBumpRevenue = 0;
-                        let orderBumpSales = 0;
-                        if (element.hasOrderBump && element.generatesRevenue) {
-                            const orderBumpPrice = element.orderBumpPrice || 0;
-                            const orderBumpConversion = element.orderBumpConversion || 0;
-                            orderBumpSales = Math.round(leads * (orderBumpConversion / 100));
-                            orderBumpRevenue = orderBumpSales * orderBumpPrice;
-                            revenue += orderBumpRevenue;
-                        }
-
-                        element.calculatedMetrics = {
-                            visits: totalVisits,
-                            pageViews,
-                            leads,
-                            revenue,
-                            profit: revenue,
-                            cost: 0,
-                            investment: totalInvestment,
-                            cpm: 0,
-                            ctr: 0,
-                            costPerLead: 0,
-                            orderBumpSales,
-                            orderBumpRevenue
-                        };
-
-                        // Propaga para elementos filhos
-                        element.childConnections.forEach(conn => {
-                            const childElement = elementMap[conn.to];
-                            const conversionRate = conn.conversion || 0;
-                            let childTraffic = 0;
-
-                            // Se o elemento filho é um Downsell ou Recuperação, envia os NÃO convertidos
-                            if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
-                                const nonConverted = pageViews - leads;
-                                childTraffic = Math.round(nonConverted * (conversionRate / 100));
-                            } else {
-                                childTraffic = Math.round(leads * (conversionRate / 100));
-                            }
-
-                            if (childTraffic > 0) {
-                                if (!childElement.incomingTraffic) {
-                                    childElement.incomingTraffic = [];
-                                }
-                                childElement.incomingTraffic.push({
-                                    traffic: childTraffic,
-                                    investment: totalInvestment
-                                });
-                            }
-                        });
-                    }
-                });
-
-                // FASE 3: Processa elementos que ainda não foram calculados (podem ter recebido tráfego na fase 2)
-                let maxIterations = 10; // Previne loop infinito
-                let hasUncalculated = true;
-
-                while (hasUncalculated && maxIterations > 0) {
-                    hasUncalculated = false;
-                    maxIterations--;
-
-                    Object.values(elementMap).forEach(element => {
-                        if (element.incomingTraffic.length > 0 && !element.calculatedMetrics) {
-                            hasUncalculated = true;
-
-                            // Copia a lógica de cálculo
-                            const totalVisits = element.incomingTraffic.reduce((sum, t) => sum + t.traffic, 0);
-                            const totalInvestment = element.incomingTraffic.reduce((sum, t) => sum + t.investment, 0);
-                            const pageViewRate = element.pageViewRate || 100;
-                            const pageViews = Math.round(totalVisits * (pageViewRate / 100));
-                            const conversionRate = element.conversionRate || 0;
-                            const leads = Math.round(pageViews * (conversionRate / 100));
-                            const price = element.price || 0;
-                            let revenue = element.generatesRevenue ? (leads * price) : 0;
-                            let orderBumpRevenue = 0;
-                            let orderBumpSales = 0;
-
-                            if (element.hasOrderBump && element.generatesRevenue) {
-                                const orderBumpPrice = element.orderBumpPrice || 0;
-                                const orderBumpConversion = element.orderBumpConversion || 0;
-                                orderBumpSales = Math.round(leads * (orderBumpConversion / 100));
-                                orderBumpRevenue = orderBumpSales * orderBumpPrice;
-                                revenue += orderBumpRevenue;
-                            }
-
-                            element.calculatedMetrics = {
-                                visits: totalVisits,
-                                pageViews,
-                                leads,
-                                revenue,
-                                profit: revenue,
-                                cost: 0,
-                                investment: totalInvestment,
-                                cpm: 0,
-                                ctr: 0,
-                                costPerLead: 0,
-                                orderBumpSales,
-                                orderBumpRevenue
-                            };
-
-                            // Propaga para elementos filhos
-                            element.childConnections.forEach(conn => {
-                                const childElement = elementMap[conn.to];
-                                const childConversionRate = conn.conversion || 0;
-                                let childTraffic = 0;
-
-                                if (childElement && (childElement.type === 'downsell' || childElement.type === 'recuperacao')) {
-                                    const nonConverted = pageViews - leads;
-                                    childTraffic = Math.round(nonConverted * (childConversionRate / 100));
-                                } else {
-                                    childTraffic = Math.round(leads * (childConversionRate / 100));
-                                }
-
-                                if (childTraffic > 0) {
-                                    if (!childElement.incomingTraffic) {
-                                        childElement.incomingTraffic = [];
-                                    }
-                                    childElement.incomingTraffic.push({
-                                        traffic: childTraffic,
-                                        investment: totalInvestment
-                                    });
-                                }
-                            });
+                    element.childConnections.forEach(conn => {
+                        const childElement = elementMap[conn.to];
+                        if (!childElement || isIndependentSource(childElement)) return;
+                        remainingParents[conn.to] -= 1;
+                        if (remainingParents[conn.to] === 0) {
+                            queue.push(childElement);
                         }
                     });
                 }
+
+                // Fallback: elementos presos em ciclos (ex: A->B->A) nunca chegam a
+                // remainingParents 0. Calcula com o que tiverem para não ficarem vazios.
+                Object.values(elementMap).forEach(element => {
+                    if (!processed.has(element.id)) {
+                        processed.add(element.id);
+                        computeElementMetrics(element);
+                        propagateToChildren(element);
+                    }
+                });
 
                 return elementMap;
             };
@@ -2324,25 +2303,26 @@ HTML_CONTENT = """<!DOCTYPE html>
                 Object.values(metricsMap).forEach(el => {
                     if (el.calculatedMetrics) {
                         totalRevenue += el.calculatedMetrics.revenue;
-                        totalSales += el.calculatedMetrics.leads;
+                        
+                        // Não conta cliques de tráfego como conversões no dashboard
+                        const isTrafficSource = ['trafego', 'google', 'facebook', 'retargeting'].includes(el.type);
+                        if (!isTrafficSource) {
+                            totalSales += el.calculatedMetrics.leads;
+                        }
 
                         // Conta vendas apenas de elementos que geram receita
                         if (el.generatesRevenue && el.calculatedMetrics.leads > 0) {
                             totalActualSales += el.calculatedMetrics.leads;
                         }
 
-                        // Soma investimento apenas dos elementos raiz
+                        // Soma o custo de mídia (já inclui o investimento de retargeting,
+                        // pois computeElementMetrics o registra em calculatedMetrics.cost)
                         if (el.calculatedMetrics.cost > 0) {
                             totalInvestment += el.calculatedMetrics.cost;
                         }
 
-                        // Soma investimento de retargeting
-                        if (el.type === 'retargeting' && el.retargetingInvestment > 0) {
-                            totalInvestment += el.retargetingInvestment;
-                        }
-
                         // Conta visitantes dos elementos de tráfego
-                        if (el.type === 'trafego') {
+                        if (['trafego', 'google', 'facebook', 'retargeting'].includes(el.type)) {
                             totalVisitors += el.clicks || 0;
                         }
                     }
@@ -2358,7 +2338,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                     profit: totalProfit,
                     cac: cac,
                     roi: roi,
-                    sales: totalSales,
+                    sales: totalActualSales, // Mostra apenas conversões reais (vendas/metas)
                     investment: totalInvestment,
                     visitors: totalVisitors
                 };
@@ -2411,7 +2391,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 const y = e.clientY - rect.top - 50;
 
                 const newElement = {
-                    id: Date.now(),
+                    id: genId(),
                     type: elementType.type,
                     name: elementType.name,
                     icon: elementType.icon,
@@ -2624,7 +2604,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                         }
 
                         setConnections([...connections, {
-                            id: Date.now(),
+                            id: genId(),
                             from: connectingFrom,
                             to: hoveredElement,
                             fromSide: connectionFromSide,
@@ -2671,7 +2651,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 const defaultTrafficMode = elementType.type === 'google' ? 'metrics' : 'absolute';
 
                 const newElement = {
-                    id: Date.now(),
+                    id: genId(),
                     type: elementType.type,
                     name: elementType.name,
                     icon: elementType.icon,
@@ -2698,7 +2678,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                 // Cria a conexão com o novo elemento
                 if (connectingFrom) {
                     setConnections([...connections, {
-                        id: Date.now() + 1,
+                        id: genId(),
                         from: connectingFrom,
                         to: newElement.id,
                         conversion: 100
@@ -2754,10 +2734,8 @@ HTML_CONTENT = """<!DOCTYPE html>
             };
 
             const updateElementProperty = (property, value) => {
-                console.log('updateElementProperty chamada:', property, value, 'elemento:', selectedElement);
                 setElements(elements.map(el => {
                     if (el.id === selectedElement) {
-                        console.log('Atualizando elemento:', el.id, property, value);
                         // Se for um campo numérico
                         if (['investment', 'impressions', 'clicks', 'pageViewRate', 'conversionRate', 'price', 'ctr', 'cpm', 'cpc', 'orderBumpPrice', 'orderBumpConversion', 'addToCartRate', 'retargetingInvestment'].includes(property)) {
                             // Se o valor estiver vazio, permite vazio (não força 0)
@@ -2782,6 +2760,10 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     // Calcula CPC baseado em investimento e cliques
                                     if (updated.clicks > 0 && inv > 0 && updated.cpc === 0) {
                                         updated.cpc = parseFloat((inv / updated.clicks).toFixed(2));
+                                    }
+                                    // Calcula impressões se tivermos CTR
+                                    if (updated.ctr > 0 && updated.clicks > 0) {
+                                        updated.impressions = Math.round((updated.clicks / (updated.ctr / 100)));
                                     }
                                 } else if (el.trafficMode === 'metrics') {
                                     // Facebook/Outros usam CPM + CTR
@@ -2960,6 +2942,31 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 {showBottleneckAnalysis ? 'Fechar Análise' : 'Análise de Gargalos'}
                             </button>
                             <button
+                                onClick={() => {
+                                    setPresentationMode(!presentationMode);
+                                    setSelectedElement(null);
+                                    setSelectedConnection(null);
+                                    if (showBottleneckAnalysis) setShowBottleneckAnalysis(false);
+                                }}
+                                title="Visão limpa para apresentar ao cliente (esconde os números)"
+                                style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: presentationMode ? 'rgba(139, 92, 246, 0.18)' : 'rgba(139, 92, 246, 0.1)',
+                                    color: '#7c3aed',
+                                    border: `1px solid rgba(139, 92, 246, ${presentationMode ? '0.4' : '0.25'})`,
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '13px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {presentationMode ? '✏️ Modo Edição' : '👁️ Modo Apresentação'}
+                            </button>
+                            <button
                                 onClick={() => saveFunnel()}
                                 disabled={saving}
                                 style={{
@@ -2977,6 +2984,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 {saveSuccess ? 'Salvo!' : (saving ? 'Salvando...' : 'Salvar')}
                             </button>
                         </div>
+                        {!presentationMode && (
+                        <React.Fragment>
                         <div className="metric">
                             <div className="metric-label">Visitantes</div>
                             <div className="metric-value">
@@ -3013,6 +3022,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 {dashboardMetrics.roi.toFixed(1)}%
                             </div>
                         </div>
+                        </React.Fragment>
+                        )}
                     </div>
 
                     <div className="main-content">
@@ -3161,6 +3172,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                             </div>
                         )}
 
+                        {!presentationMode && (
                         <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
                             <div className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
                                 {sidebarCollapsed ? '→' : '←'}
@@ -3188,6 +3200,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 ))}
                             </div>
                         </div>
+                        )}
 
                         <div
                             className="canvas-container"
@@ -3231,14 +3244,22 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                                         const midX = (fromEl.x + toEl.x) / 2 + 100;
                                         const midY = (fromEl.y + toEl.y) / 2 + 50;
+                                        const connPath = getConnectionPath(conn.from, conn.to, conn.fromSide || 'right', conn.toSide || 'left');
 
                                         return (
-                                            <g key={`${conn.id}-${fromEl.x}-${fromEl.y}-${toEl.x}-${toEl.y}`}>
+                                            <g key={conn.id}>
+                                                {/* Área de clique larga e invisível para facilitar selecionar a conexão */}
                                                 <path
-                                                    className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
-                                                    d={getConnectionPath(conn.from, conn.to, conn.fromSide || 'right', conn.toSide || 'left')}
+                                                    className="connection-hit-area"
+                                                    d={connPath}
                                                     onClick={(e) => handleConnectionClick(e, conn)}
                                                 />
+                                                <path
+                                                    className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
+                                                    d={connPath}
+                                                />
+                                                {!presentationMode && (
+                                                <React.Fragment>
                                                 <rect
                                                     className="connection-label-bg"
                                                     x={midX - 20}
@@ -3253,6 +3274,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 >
                                                     {conn.conversion || 0}%
                                                 </text>
+                                                </React.Fragment>
+                                                )}
                                             </g>
                                         );
                                     })}
@@ -3283,18 +3306,25 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 selectedElement === element.id ? 'selected' : ''
                                             } ${isDragging && draggingElement === element.id ? 'dragging' : ''} ${
                                                 hoveredElement === element.id ? 'drag-hover' : ''
-                                            }`}
+                                            } ${presentationMode ? 'presentation' : ''}`}
                                             style={{
                                                 left: element.x,
                                                 top: element.y,
                                                 background: elementColor,
                                                 color: textColor
                                             }}
-                                            onClick={(e) => handleElementClick(e, element)}
-                                            onMouseDown={(e) => handleElementMouseDown(e, element)}
-                                            onMouseEnter={() => handleElementHover(element.id, true)}
-                                            onMouseLeave={() => handleElementHover(element.id, false)}
+                                            onClick={presentationMode ? undefined : (e) => handleElementClick(e, element)}
+                                            onMouseDown={presentationMode ? undefined : (e) => handleElementMouseDown(e, element)}
+                                            onMouseEnter={presentationMode ? undefined : () => handleElementHover(element.id, true)}
+                                            onMouseLeave={presentationMode ? undefined : () => handleElementHover(element.id, false)}
                                         >
+                                            {presentationMode ? (
+                                            <div className="element-presentation">
+                                                <span className="element-presentation-icon"><Icon name={element.icon} size={32} /></span>
+                                                <span className="element-presentation-name">{element.name}</span>
+                                            </div>
+                                            ) : (
+                                            <React.Fragment>
                                             {/* Pontos de conexão nos 4 lados */}
                                             <div
                                                 className={`connection-point top ${connectingFrom === element.id ? 'connecting' : ''}`}
@@ -3424,6 +3454,8 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 onMouseDown={(e) => handleConnectionStart(e, element.id)}
                                                 title="Saída - Segurar e arrastar para conectar"
                                             />
+                                            </React.Fragment>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -3462,7 +3494,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                             )}
                         </div>
 
-                        <div className={`properties-panel ${!selectedElementData ? 'hidden' : ''}`}>
+                        <div className={`properties-panel ${(!selectedElementData || presentationMode) ? 'hidden' : ''}`}>
                             <h3>Propriedades</h3>
                             {selectedElementData ? (
                                 <div>
@@ -3813,6 +3845,17 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <>
                                                     {/* Google Ads usa CPC (Custo Por Clique) */}
                                                     <div className="form-group">
+                                                        <label className="form-label">💰 Investimento (R$)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={selectedElementData.investment === 0 ? '' : selectedElementData.investment}
+                                                            onChange={(e) => updateElementProperty('investment', e.target.value)}
+                                                            placeholder="Ex: 5000"
+                                                        />
+                                                        <small className="form-help">Total a investir no Google Ads</small>
+                                                    </div>
+                                                    <div className="form-group">
                                                         <label className="form-label">💵 CPC - Custo por Clique (R$)</label>
                                                         <input
                                                             type="number"
@@ -3823,6 +3866,18 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                             step="0.01"
                                                         />
                                                         <small className="form-help">Quanto você paga por cada clique? (Cliques calculados: {selectedElementData.clicks.toLocaleString('pt-BR')})</small>
+                                                    </div>
+                                                    <div className="form-group">
+                                                        <label className="form-label">📊 CTR - Taxa de Cliques (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={selectedElementData.ctr === 0 ? '' : selectedElementData.ctr}
+                                                            onChange={(e) => updateElementProperty('ctr', e.target.value)}
+                                                            placeholder="Ex: 5"
+                                                            step="0.01"
+                                                        />
+                                                        <small className="form-help">% de pessoas que clicam (Impressões calculadas: {selectedElementData.impressions.toLocaleString('pt-BR')})</small>
                                                     </div>
                                                 </>
                                             ) : (
@@ -6601,72 +6656,85 @@ class FunnelBuilderHandler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         """Responde a requisições PUT"""
-        # API: Atualizar funil
-        if self.path.startswith('/api/funnels/'):
-            token = self._get_token()
-            user = auth.get_user_from_token(token)
+        client_ip = self._get_client_ip()
 
-            if not user:
-                self._send_json({'error': 'Não autenticado'}, 401)
+        try:
+            # API: Atualizar funil
+            if self.path.startswith('/api/funnels/'):
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                funnel_id = int(self.path.split('/')[-1])
+                funnel = Funnel.get_by_id(funnel_id, user.id)
+
+                if not funnel:
+                    self._send_json({'error': 'Funil não encontrado'}, 404)
+                    return
+
+                data = self._read_json_body()
+                success = funnel.update(
+                    name=data.get('name'),
+                    icon=data.get('icon'),
+                    elements=data.get('elements'),
+                    connections=data.get('connections')
+                )
+
+                if success:
+                    self._send_json({
+                        'success': True,
+                        'funnel': funnel.to_dict()
+                    })
+                else:
+                    self._send_json({'error': 'Erro ao atualizar funil'}, 500)
                 return
 
-            funnel_id = int(self.path.split('/')[-1])
-            funnel = Funnel.get_by_id(funnel_id, user.id)
+            # ==================== ROTAS PUT DE MARKETING ====================
 
-            if not funnel:
-                self._send_json({'error': 'Funil não encontrado'}, 404)
+            # API: Atualizar página
+            if self.path.startswith('/api/pages/'):
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                page_id = int(self.path.split('/')[3])
+                data = self._read_json_body()
+                status, response = handle_page_update(user.id, page_id, data)
+                self._send_json(response, status)
                 return
 
-            data = self._read_json_body()
-            success = funnel.update(
-                name=data.get('name'),
-                icon=data.get('icon'),
-                elements=data.get('elements'),
-                connections=data.get('connections')
+            # API: Atualizar UTM
+            if self.path.startswith('/api/utms/'):
+                token = self._get_token()
+                user = auth.get_user_from_token(token)
+
+                if not user:
+                    self._send_json({'error': 'Não autenticado'}, 401)
+                    return
+
+                utm_id = int(self.path.split('/')[3])
+                data = self._read_json_body()
+                status, response = handle_utm_update(user.id, utm_id, data)
+                self._send_json(response, status)
+                return
+
+            self._send_json({'error': 'Endpoint não encontrado'}, 404)
+
+        except Exception as e:
+            security_logger.log_api_error(
+                endpoint=self.path,
+                method='PUT',
+                ip=client_ip,
+                error=str(e),
+                status_code=500
             )
-
-            if success:
-                self._send_json({
-                    'success': True,
-                    'funnel': funnel.to_dict()
-                })
-            else:
-                self._send_json({'error': 'Erro ao atualizar funil'}, 500)
-            return
-
-        # ==================== ROTAS PUT DE MARKETING ====================
-
-        # API: Atualizar página
-        if self.path.startswith('/api/pages/'):
-            token = self._get_token()
-            user = auth.get_user_from_token(token)
-
-            if not user:
-                self._send_json({'error': 'Não autenticado'}, 401)
-                return
-
-            page_id = int(self.path.split('/')[3])
-            data = self._read_json_body()
-            status, response = handle_page_update(user.id, page_id, data)
-            self._send_json(response, status)
-            return
-
-        # API: Atualizar UTM
-        if self.path.startswith('/api/utms/'):
-            token = self._get_token()
-            user = auth.get_user_from_token(token)
-
-            if not user:
-                self._send_json({'error': 'Não autenticado'}, 401)
-                return
-
-            utm_id = int(self.path.split('/')[3])
-            data = self._read_json_body()
-            status, response = handle_utm_update(user.id, utm_id, data)
-            self._send_json(response, status)
-            return
-
-        self._send_json({'error': 'Endpoint não encontrado'}, 404)
+            self._send_json({'error': 'Erro interno do servidor'}, 500)
 
     def do_DELETE(self):
         """Responde a requisições DELETE"""
