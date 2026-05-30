@@ -1416,6 +1416,58 @@ HTML_CONTENT = """<!DOCTYPE html>
             color: var(--fg);
             flex: 1;
         }
+
+        /* ── Panel section collapsible ───────────── */
+        .panel-section {
+            margin-bottom: 4px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .panel-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 12px;
+            cursor: pointer;
+            background: var(--bg-surface);
+            transition: background var(--transition);
+            user-select: none;
+        }
+
+        .panel-section-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .panel-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--fg-muted);
+        }
+
+        .panel-section-arrow {
+            font-size: 10px;
+            color: var(--fg-subtle);
+            transition: transform var(--transition);
+        }
+
+        .panel-section-arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .panel-section-body {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .panel-section-body .form-group:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -1975,6 +2027,18 @@ HTML_CONTENT = """<!DOCTYPE html>
 
             const [saveSuccess, setSaveSuccess] = useState(false);
             const [showBottleneckAnalysis, setShowBottleneckAnalysis] = useState(false);
+            // Seções colapsáveis do painel de propriedades
+            const [panelSections, setPanelSections] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('panelSections') || 'null') || { essential: true, advanced: false, reference: false }; }
+                catch { return { essential: true, advanced: false, reference: false }; }
+            });
+            const togglePanelSection = (key) => {
+                setPanelSections(prev => {
+                    const next = { ...prev, [key]: !prev[key] };
+                    try { localStorage.setItem('panelSections', JSON.stringify(next)); } catch {}
+                    return next;
+                });
+            };
 
             const saveFunnel = async () => {
                 // Se já há um save em andamento, reagenda para não perder mudanças
@@ -2270,17 +2334,39 @@ HTML_CONTENT = """<!DOCTYPE html>
 
                 totalProfit = totalRevenue - totalInvestment;
                 const roi = totalInvestment > 0 ? ((totalProfit / totalInvestment) * 100) : 0;
-                // CAC baseado apenas em vendas reais (elementos que geram receita)
                 const cac = totalActualSales > 0 ? (totalInvestment / totalActualSales) : 0;
+
+                // Quality Score: verifica se os valores configurados são realistas
+                let qualityPoints = 0;
+                let qualityTotal = 0;
+                const trafficEls = elements.filter(el => ['trafego','google','facebook','retargeting'].includes(el.type));
+                const convEls = elements.filter(el => !['trafego','google','facebook','retargeting'].includes(el.type));
+                // +1 ponto por cada fonte de tráfego com cliques configurados
+                trafficEls.forEach(el => {
+                    qualityTotal += 2;
+                    if ((el.clicks || 0) > 0) qualityPoints += 1;
+                    if ((el.investment || 0) > 0) qualityPoints += 1;
+                });
+                // +1 ponto por cada elemento de conversão com taxa entre 0.5 e 80%
+                convEls.forEach(el => {
+                    qualityTotal += 1;
+                    const cr = el.conversionRate || 0;
+                    if (cr > 0 && cr <= 80) qualityPoints += 1;
+                });
+                // Bônus: funil tem pelo menos 2 elementos e 1 conexão
+                if (elements.length >= 2) { qualityPoints += 1; qualityTotal += 1; }
+                if (connections.length >= 1) { qualityPoints += 1; qualityTotal += 1; }
+                const qualityScore = qualityTotal > 0 ? Math.round((qualityPoints / qualityTotal) * 100) : 0;
 
                 return {
                     revenue: totalRevenue,
                     profit: totalProfit,
                     cac: cac,
                     roi: roi,
-                    sales: totalActualSales, // Mostra apenas conversões reais (vendas/metas)
+                    sales: totalActualSales,
                     investment: totalInvestment,
-                    visitors: totalVisitors
+                    visitors: totalVisitors,
+                    qualityScore
                 };
             };
 
@@ -2962,6 +3048,12 @@ HTML_CONTENT = """<!DOCTYPE html>
                                 {dashboardMetrics.roi.toFixed(1)}%
                             </div>
                         </div>
+                        <div className="metric" title="Qualidade da simulação — indica se os valores configurados parecem realistas">
+                            <div className="metric-label">Qualidade</div>
+                            <div className="metric-value" style={{color: dashboardMetrics.qualityScore >= 80 ? 'var(--success)' : dashboardMetrics.qualityScore >= 50 ? 'var(--warning)' : 'var(--danger)'}}>
+                                {dashboardMetrics.qualityScore}%
+                            </div>
+                        </div>
                         </React.Fragment>
                         )}
                     </div>
@@ -3177,7 +3269,14 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     </marker>
                                 </defs>
                                 <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoomLevel})`}>
-                                    {connections.map((conn, idx) => {
+                                    {(() => {
+                                        // Pre-calcula gargalos uma vez para colorir as conexões
+                                        const bottleneckMap = {};
+                                        if (showBottleneckAnalysis) {
+                                            const bns = analyzeBottlenecks();
+                                            bns.forEach(b => { bottleneckMap[`${b.fromId}-${b.toId}`] = b; });
+                                        }
+                                        return connections.map((conn) => {
                                         const fromEl = elements.find(el => el.id === conn.from);
                                         const toEl = elements.find(el => el.id === conn.to);
                                         if (!fromEl || !toEl) return null;
@@ -3186,9 +3285,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         const midY = (fromEl.y + toEl.y) / 2 + 50;
                                         const connPath = getConnectionPath(conn.from, conn.to, conn.fromSide || 'right', conn.toSide || 'left');
 
+                                        // Gargalo para esta conexão
+                                        const bn = bottleneckMap[`${conn.from}-${conn.to}`];
+                                        const isBottleneck = !!bn;
+                                        const dropRate = bn ? bn.dropoutRate : 0;
+                                        const bnColor = dropRate > 70 ? '#EF4444' : dropRate > 40 ? '#F97316' : '#FBBF24';
+                                        const badgeW = isBottleneck ? 52 : 40;
+
                                         return (
                                             <g key={conn.id}>
-                                                {/* Área de clique larga e invisível para facilitar selecionar a conexão */}
                                                 <path
                                                     className="connection-hit-area"
                                                     d={connPath}
@@ -3197,28 +3302,31 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <path
                                                     className={`connection-line ${selectedConnection === conn.id ? 'selected' : ''}`}
                                                     d={connPath}
+                                                    style={isBottleneck ? {stroke: bnColor, strokeWidth: selectedConnection === conn.id ? 4 : 2.5, opacity: 0.9} : {}}
                                                 />
                                                 {!presentationMode && (
                                                 <React.Fragment>
-                                                <rect
-                                                    className="connection-label-bg"
-                                                    x={midX - 20}
-                                                    y={midY - 10}
-                                                    width="40"
-                                                    height="20"
-                                                />
-                                                <text
-                                                    className="connection-label"
-                                                    x={midX}
-                                                    y={midY + 4}
-                                                >
-                                                    {conn.conversion || 0}%
-                                                </text>
+                                                {isBottleneck ? (
+                                                    <>
+                                                        <rect x={midX - badgeW/2} y={midY - 11} width={badgeW} height="22" rx="6" fill={bnColor} opacity="0.92" />
+                                                        <text x={midX} y={midY + 4} textAnchor="middle" fontSize="10" fontWeight="700" fill="white" fontFamily="JetBrains Mono, monospace">
+                                                            -{dropRate.toFixed(0)}% perda
+                                                        </text>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <rect className="connection-label-bg" x={midX - 20} y={midY - 10} width="40" height="20" />
+                                                        <text className="connection-label" x={midX} y={midY + 4}>
+                                                            {conn.conversion || 0}%
+                                                        </text>
+                                                    </>
+                                                )}
                                                 </React.Fragment>
                                                 )}
                                             </g>
                                         );
-                                    })}
+                                        });
+                                    })()}
                                     {isDraggingConnection && dragConnectionStart && dragConnectionEnd && (
                                         <line
                                             className="connection-drag-line"
@@ -3232,6 +3340,67 @@ HTML_CONTENT = """<!DOCTYPE html>
                             </svg>
 
                             <div className="canvas" style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})` }}>
+                                {/* Empty state — aparece quando o canvas está vazio */}
+                                {elements.length === 0 && !presentationMode && (
+                                    <div style={{
+                                        position: 'fixed',
+                                        inset: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '16px',
+                                        pointerEvents: 'none',
+                                        zIndex: 2
+                                    }}>
+                                        <div style={{
+                                            width: '72px', height: '72px',
+                                            borderRadius: '20px',
+                                            background: 'rgba(124,58,237,0.12)',
+                                            border: '1px solid rgba(124,58,237,0.25)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '32px'
+                                        }}>📊</div>
+                                        <div style={{textAlign: 'center'}}>
+                                            <p style={{fontSize: '16px', fontWeight: '700', color: 'var(--fg)', marginBottom: '6px', fontFamily: 'Inter, sans-serif'}}>Canvas vazio</p>
+                                            <p style={{fontSize: '13px', color: 'var(--fg-muted)', fontFamily: 'Inter, sans-serif', lineHeight: '1.6'}}>
+                                                Arraste um elemento da barra lateral<br/>ou solte uma conexão no canvas para começar
+                                            </p>
+                                        </div>
+                                        <div style={{
+                                            display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center',
+                                            marginTop: '4px', pointerEvents: 'all'
+                                        }}>
+                                            {[{icon:'🎯',label:'Tráfego Pago',type:'trafego'},{icon:'🇫',label:'Facebook Ads',type:'facebook'},{icon:'🔍',label:'Google Ads',type:'google'}].map(t => (
+                                                <div key={t.type} onClick={() => {
+                                                    const newEl = {
+                                                        id: genId(), type: t.type, name: t.label, icon: t.icon,
+                                                        color: `color-${t.type}`, x: 200 + Math.random()*100, y: 200,
+                                                        investment: 0, impressions: 0, clicks: 0, ctr: 0, cpm: 0,
+                                                        trafficMode: t.type === 'google' ? 'metrics' : 'absolute',
+                                                        pageViewRate: 100, conversionRate: 0, price: 0, url: '', description: '', generatesRevenue: false
+                                                    };
+                                                    setElements([newEl]);
+                                                }} style={{
+                                                    padding: '8px 14px',
+                                                    background: 'rgba(124,58,237,0.1)',
+                                                    border: '1px solid rgba(124,58,237,0.25)',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--primary-light)',
+                                                    fontSize: '13px', fontWeight: '600',
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                                                    fontFamily: 'Inter, sans-serif',
+                                                    transition: 'all 150ms'
+                                                }}
+                                                    onMouseOver={(e) => { e.currentTarget.style.background='rgba(124,58,237,0.2)'; }}
+                                                    onMouseOut={(e) => { e.currentTarget.style.background='rgba(124,58,237,0.1)'; }}
+                                                >
+                                                    <span>{t.icon}</span>{t.label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 {elements.map(element => {
                                     const metrics = metricsMap[element.id]?.calculatedMetrics || {};
                                     // Se tem cor customizada, usa ela; senão usa a padrão do tipo
@@ -3338,29 +3507,19 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                             </div>
                                                         </div>
                                                     </>
-                                                ) : element.type === 'landing' ? (
-                                                    // Métricas para Landing Page
+                                                ) : (
+                                                    // Métricas para páginas e outros elementos
                                                     <>
                                                         <div className="metric-row">
                                                             <span>👥 {metrics.visits?.toLocaleString('pt-BR') || 0} visitantes</span>
                                                         </div>
                                                         <div className="metric-row">
-                                                            <span>✅ {metrics.leads?.toLocaleString('pt-BR') || 0} conversões ({element.conversionRate || 0}%)</span>
-                                                        </div>
-                                                        <div style={{borderTop: '1px solid rgba(255,255,255,0.2)', margin: '6px 0', paddingTop: '6px'}}>
-                                                            <div className="metric-row">
-                                                                <span>📊 Taxa: {element.conversionRate || 0}%</span>
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    // Métricas para outros elementos
-                                                    <>
-                                                        <div className="metric-row">
-                                                            <span>👥 {metrics.visits?.toLocaleString('pt-BR') || 0} pessoas</span>
-                                                        </div>
-                                                        <div className="metric-row">
-                                                            <span>{metrics.revenue > 0 ? '🛒' : '✅'} {metrics.leads?.toLocaleString('pt-BR') || 0} {metrics.revenue > 0 ? 'vendas' : 'conversões'} ({element.conversionRate || 0}%)</span>
+                                                            {(() => {
+                                                                const isRevenue = ['vendas','checkout','upsell','downsell','ecommerce'].includes(element.type);
+                                                                const isCapture = ['landing','captura','squeeze'].includes(element.type);
+                                                                const label = isRevenue ? 'vendas' : isCapture ? 'leads' : 'conversões';
+                                                                return <span>{metrics.leads?.toLocaleString('pt-BR') || 0} {label} ({element.conversionRate || 0}%)</span>;
+                                                            })()}
                                                         </div>
                                                         {/* Retargeting sem métricas de tráfego mostra apenas investimento se configurado */}
                                                         {element.type === 'retargeting' && element.clicks === 0 && element.retargetingInvestment > 0 && (
@@ -3435,11 +3594,25 @@ HTML_CONTENT = """<!DOCTYPE html>
                         </div>
 
                         <div className={`properties-panel ${(!selectedElementData || presentationMode) ? 'hidden' : ''}`}>
-                            <h3>Propriedades</h3>
+                            <h3 style={{marginBottom:'12px'}}>
+                                {selectedElementData?.name || 'Propriedades'}
+                                <span style={{fontSize:'10px', color:'var(--fg-subtle)', marginLeft:'8px', fontWeight:'400', textTransform:'uppercase', letterSpacing:'0.8px'}}>
+                                    {selectedElementData?.type}
+                                </span>
+                            </h3>
                             {selectedElementData ? (
                                 <div>
+
+                                    {/* ── Divisor: AVANÇADO (cor, URL, descrição) ── aparece ANTES dos campos essenciais */}
+                                    <div className="panel-section-header" onClick={() => togglePanelSection('advanced')} style={{borderRadius:'var(--radius-sm)', marginBottom: panelSections.advanced ? '8px' : '4px'}}>
+                                        <span className="panel-section-title">Aparência &amp; Links</span>
+                                        <span className={`panel-section-arrow ${panelSections.advanced ? 'open' : ''}`}>▶</span>
+                                    </div>
+
+                                    {panelSections.advanced && (<div>
+
                                     <div className="form-group">
-                                        <label className="form-label">Nome do Elemento</label>
+                                        <label className="form-label">Nome</label>
                                         <input
                                             type="text"
                                             className="form-input"
@@ -3450,7 +3623,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="form-label">🎨 Cor do Elemento</label>
+                                        <label className="form-label">Cor do Elemento</label>
                                         <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
                                             <input
                                                 type="color"
@@ -3701,44 +3874,57 @@ HTML_CONTENT = """<!DOCTYPE html>
                                         </div>
                                     )}
 
+                                    </div>)} {/* Fecha panelSections.advanced */}
+
+                                    {/* ── Divisor: ESSENCIAL (métricas, conversão, receita) ── */}
+                                    <div className="panel-section-header" onClick={() => togglePanelSection('essential')} style={{borderRadius:'var(--radius-sm)', marginBottom: panelSections.essential ? '8px' : '4px', marginTop:'4px'}}>
+                                        <span className="panel-section-title">Métricas</span>
+                                        <span className={`panel-section-arrow ${panelSections.essential ? 'open' : ''}`}>▶</span>
+                                    </div>
+
+                                    {panelSections.essential && (<div>
+
                                     {/* Campos específicos para TRÁFEGO */}
                                     {['trafego', 'google', 'facebook'].includes(selectedElementData.type) && !connections.some(conn => conn.to === selectedElementData.id) && (
                                         <>
-                                            {/* Google Ads não tem toggle - sempre usa CPM */}
+                                            {/* Toggle PRIMEIRO — define quais campos aparecerão abaixo */}
                                             {selectedElementData.type !== 'google' && (
-                                                <div className="traffic-mode-toggle">
-                                                    <div
-                                                        className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
-                                                        onClick={() => updateElementProperty('trafficMode', 'absolute')}
-                                                    >
-                                                        📊 Números Absolutos
+                                                <>
+                                                    <p style={{fontSize:'11px', color:'var(--fg-subtle)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.7px', fontWeight:'600'}}>Como informar seus dados</p>
+                                                    <div className="traffic-mode-toggle">
+                                                        <div
+                                                            className={`mode-option ${selectedElementData.trafficMode === 'absolute' ? 'active' : 'inactive'}`}
+                                                            onClick={() => updateElementProperty('trafficMode', 'absolute')}
+                                                        >
+                                                            Impressões + Cliques
+                                                        </div>
+                                                        <div
+                                                            className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
+                                                            onClick={() => updateElementProperty('trafficMode', 'metrics')}
+                                                        >
+                                                            CPM + CTR
+                                                        </div>
                                                     </div>
-                                                    <div
-                                                        className={`mode-option ${selectedElementData.trafficMode === 'metrics' ? 'active' : 'inactive'}`}
-                                                        onClick={() => updateElementProperty('trafficMode', 'metrics')}
-                                                    >
-                                                        📈 CTR & CPM
-                                                    </div>
-                                                </div>
+                                                </>
                                             )}
 
-                                            {/* Google Ads sempre mostra info de que usa CPC */}
                                             {selectedElementData.type === 'google' && (
                                                 <div style={{
-                                                    background: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
-                                                    color: 'white',
-                                                    padding: '12px',
-                                                    borderRadius: '8px',
-                                                    marginBottom: '20px',
-                                                    fontSize: '13px',
-                                                    fontWeight: '600'
+                                                    background: 'rgba(66,133,244,0.12)',
+                                                    border: '1px solid rgba(66,133,244,0.25)',
+                                                    color: 'var(--fg-muted)',
+                                                    padding: '10px 12px',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    marginBottom: '16px',
+                                                    fontSize: '12.5px',
+                                                    fontWeight: '500'
                                                 }}>
-                                                    🔍 Google Ads utiliza modelo CPC (Custo Por Clique)
+                                                    Google Ads — modelo CPC (Custo Por Clique)
                                                 </div>
                                             )}
 
                                             <div className="form-group">
-                                                <label className="form-label">💰 Investimento Planejado (R$)</label>
+                                                <label className="form-label">Investimento (R$)</label>
                                                 <input
                                                     type="number"
                                                     className={`form-input ${validateValue('investment', selectedElementData.investment).type || ''}`}
@@ -3918,7 +4104,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 <small className="form-help">Descreva o objetivo desta página</small>
                                             </div>
                                             <div className="form-group">
-                                                <label className="form-label">✅ Taxa de Conversão (%)</label>
+                                                <label className="form-label">Visitantes que preenchem o formulário (%)</label>
                                                 <input
                                                     type="number"
                                                     className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
@@ -3929,7 +4115,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     step="0.1"
                                                     placeholder="Ex: 15"
                                                 />
-                                                <small className="form-help">% de visitantes que preencherão o formulário</small>
+                                                <small className="form-help">De cada 100 que chegam, quantos convertem?</small>
                                                 {validateValue('conversionRate', selectedElementData.conversionRate).message && (
                                                     <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
                                                         {validateValue('conversionRate', selectedElementData.conversionRate).message}
@@ -3976,10 +4162,15 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                 />
                                                 <small className="form-help">Descreva este elemento do funil</small>
                                             </div>
-                                            {/* Taxa de conversão não é necessária para Retargeting com métricas de tráfego */}
                                             {!(selectedElementData.type === 'retargeting' && selectedElementData.clicks > 0) && (
                                                 <div className="form-group">
-                                                    <label className="form-label">✅ Taxa de Conversão (%)</label>
+                                                    <label className="form-label">
+                                                        {['vendas','checkout','upsell','downsell','ecommerce'].includes(selectedElementData.type)
+                                                            ? 'Visitantes que compram (%)'
+                                                            : ['email','sequencia','whatsapp'].includes(selectedElementData.type)
+                                                            ? 'Taxa de resposta / clique (%)'
+                                                            : 'Visitantes que convertem (%)'}
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         className={`form-input ${validateValue('conversionRate', selectedElementData.conversionRate).type || ''}`}
@@ -3990,7 +4181,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                         step="0.1"
                                                         placeholder="Ex: 10"
                                                     />
-                                                    <small className="form-help">% de pessoas que completarão a ação desejada</small>
+                                                    <small className="form-help">De cada 100 que chegam aqui, quantos completam a ação?</small>
                                                     {validateValue('conversionRate', selectedElementData.conversionRate).message && (
                                                         <div className={`validation-message ${validateValue('conversionRate', selectedElementData.conversionRate).type}`}>
                                                             {validateValue('conversionRate', selectedElementData.conversionRate).message}
@@ -4123,6 +4314,14 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     })()}
                                                 </>
                                             )}
+
+                                            {/* ── Sub-toggle REFERÊNCIA (benchmarks) ── */}
+                                            <div className="panel-section-header" onClick={() => togglePanelSection('reference')} style={{borderRadius:'var(--radius-sm)', marginBottom: panelSections.reference ? '8px' : '4px', marginTop:'8px', background:'rgba(124,58,237,0.06)', borderLeft:'2px solid var(--primary)'}}>
+                                                <span className="panel-section-title" style={{color:'var(--primary-light)'}}>Benchmarks do mercado</span>
+                                                <span className={`panel-section-arrow ${panelSections.reference ? 'open' : ''}`}>▶</span>
+                                            </div>
+                                            {panelSections.reference && (<div>
+
                                             {selectedElementData.type === 'captura' && (
                                                 <div className="benchmark-compact">
                                                     <h4>📋 Benchmarks</h4>
@@ -4520,13 +4719,16 @@ HTML_CONTENT = """<!DOCTYPE html>
                                                     </div>
                                                 </>
                                             )}
+                                            </div>)} {/* Fecha panelSections.reference */}
                                         </>
                                     )}
+                                    </div>)} {/* Fecha panelSections.essential */}
                                 </div>
                             ) : selectedConnection ? (
                                 <div>
+                                    <h3>Conexão</h3>
                                     <div className="form-group">
-                                        <label className="form-label">Taxa de Conversão (%)</label>
+                                        <label className="form-label">% que seguem para esta etapa</label>
                                         <input
                                             type="number"
                                             className="form-input"
@@ -4537,6 +4739,7 @@ HTML_CONTENT = """<!DOCTYPE html>
                                             max="100"
                                             placeholder="Ex: 100"
                                         />
+                                        <small className="form-help">100% = todos os convertidos seguem para a próxima etapa</small>
                                     </div>
                                     <div className="empty-state" style={{marginTop: '20px'}}>
                                         Esta é uma conexão entre elementos. Ajuste a taxa de conversão acima.
@@ -4626,6 +4829,82 @@ HTML_CONTENT = """<!DOCTYPE html>
                     { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
                     { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
                     { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' }
+                ]
+            },
+            {
+                id: 'perpetuo',
+                name: 'Perpétuo Simples',
+                icon: '♾️',
+                description: 'Tráfego → Landing → Vendas → Obrigado',
+                elements: [
+                    { id: 1, type: 'trafego', name: 'Tráfego Pago', icon: '🎯', color: 'color-trafego', x: 100, y: 150, trafficMode: 'absolute', investment: 2000, impressions: 100000, clicks: 3000 },
+                    { id: 2, type: 'landing', name: 'Landing Page', icon: '📄', color: 'color-landing', x: 350, y: 150, conversionRate: 35, pageViewRate: 95 },
+                    { id: 3, type: 'vendas', name: 'Página de Vendas', icon: '💳', color: 'color-vendas', x: 600, y: 150, conversionRate: 5, pageViewRate: 90, generatesRevenue: true, price: 297 },
+                    { id: 4, type: 'obrigado', name: 'Obrigado', icon: '🙏', color: 'color-obrigado', x: 850, y: 150, conversionRate: 100, pageViewRate: 100 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' }
+                ]
+            },
+            {
+                id: 'lancamento',
+                name: 'Lançamento',
+                icon: '🚀',
+                description: 'Captura → Sequência → VSL → Checkout → Upsell',
+                elements: [
+                    { id: 1, type: 'facebook', name: 'Facebook Ads', icon: '🇫', color: 'color-facebook', x: 100, y: 150, trafficMode: 'metrics', investment: 8000, cpm: 30, ctr: 2 },
+                    { id: 2, type: 'captura', name: 'Página de Captura', icon: '📋', color: 'color-captura', x: 350, y: 150, conversionRate: 50, pageViewRate: 95 },
+                    { id: 3, type: 'sequencia', name: 'Sequência de E-mails', icon: '✉️', color: 'color-sequencia', x: 600, y: 150, conversionRate: 30, pageViewRate: 60 },
+                    { id: 4, type: 'vsl', name: 'VSL de Vendas', icon: '🎥', color: 'color-vsl', x: 850, y: 150, conversionRate: 55, pageViewRate: 80 },
+                    { id: 5, type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout', x: 1100, y: 150, conversionRate: 12, pageViewRate: 95, generatesRevenue: true, price: 997 },
+                    { id: 6, type: 'upsell', name: 'Upsell', icon: '⬆️', color: 'color-upsell', x: 1350, y: 150, conversionRate: 25, pageViewRate: 100, generatesRevenue: true, price: 497 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c4', from: 4, to: 5, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c5', from: 5, to: 6, conversion: 100, fromSide: 'right', toSide: 'left' }
+                ]
+            },
+            {
+                id: 'lead-nutricao',
+                name: 'Lead + Nutrição',
+                icon: '🌱',
+                description: 'Squeeze → E-mail → Oferta → Checkout',
+                elements: [
+                    { id: 1, type: 'trafego', name: 'Tráfego Orgânico', icon: '🎯', color: 'color-trafego', x: 100, y: 150, trafficMode: 'absolute', investment: 0, impressions: 0, clicks: 2000 },
+                    { id: 2, type: 'squeeze', name: 'Squeeze Page', icon: '📌', color: 'color-squeeze', x: 350, y: 150, conversionRate: 60, pageViewRate: 95 },
+                    { id: 3, type: 'email', name: 'Nutrição por E-mail', icon: '✉️', color: 'color-email', x: 600, y: 150, conversionRate: 20, pageViewRate: 45 },
+                    { id: 4, type: 'vendas', name: 'Oferta', icon: '💳', color: 'color-vendas', x: 850, y: 150, conversionRate: 8, pageViewRate: 90, generatesRevenue: true, price: 197 },
+                    { id: 5, type: 'checkout', name: 'Checkout', icon: '🛒', color: 'color-checkout', x: 1100, y: 150, conversionRate: 80, pageViewRate: 100, generatesRevenue: false }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c4', from: 4, to: 5, conversion: 100, fromSide: 'right', toSide: 'left' }
+                ]
+            },
+            {
+                id: 'quiz-funil',
+                name: 'Quiz Funil',
+                icon: '🧩',
+                description: 'Tráfego → Quiz → Landing → Checkout',
+                elements: [
+                    { id: 1, type: 'facebook', name: 'Facebook Ads', icon: '🇫', color: 'color-facebook', x: 100, y: 150, trafficMode: 'metrics', investment: 3000, cpm: 25, ctr: 3 },
+                    { id: 2, type: 'quiz', name: 'Quiz de Qualificação', icon: '❓', color: 'color-quiz', x: 350, y: 150, conversionRate: 65, pageViewRate: 90 },
+                    { id: 3, type: 'landing', name: 'Landing Personalizada', icon: '📄', color: 'color-landing', x: 600, y: 150, conversionRate: 45, pageViewRate: 95 },
+                    { id: 4, type: 'checkout', name: 'Checkout', icon: '💳', color: 'color-checkout', x: 850, y: 150, conversionRate: 10, pageViewRate: 100, generatesRevenue: true, price: 497 },
+                    { id: 5, type: 'obrigado', name: 'Obrigado', icon: '🙏', color: 'color-obrigado', x: 1100, y: 150, conversionRate: 100, pageViewRate: 100 }
+                ],
+                connections: [
+                    { id: 'c1', from: 1, to: 2, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c2', from: 2, to: 3, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c3', from: 3, to: 4, conversion: 100, fromSide: 'right', toSide: 'left' },
+                    { id: 'c4', from: 4, to: 5, conversion: 100, fromSide: 'right', toSide: 'left' }
                 ]
             }
         ];
